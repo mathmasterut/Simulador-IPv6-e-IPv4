@@ -1,0 +1,724 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulador IPv6 e IPv4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;700;900&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout: banda de encabezado + pestañas; cada pestaña es un banco de trabajo con el diagrama de bits al centro, estilo diagrama de cabecera RFC */
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --ink:#14203a; --muted:#56637d; --line:#d3d9e6; --soft:#e3e8f1;
+  --accent:#2747c9; --accent-ink:#ffffff;
+  --c-pre:#2d5bd8; --c-pre-bg:#dde6fb;
+  --c-sub:#c57a06; --c-sub-bg:#fbedd2;
+  --c-iid:#0f8a6a; --c-iid-bg:#d5f1e8;
+  --c-fix:#a8327a; --c-fix-bg:#f6dcec;
+  --c-v4:#7a4bd1; --c-v4-bg:#e9e0fa;
+  --c-grp:#0f7f99; --c-grp-bg:#d4eef4;
+  --c-zero:#7d879b; --c-zero-bg:#e7eaf0;
+  --ok:#11845b; --bad:#c23434;
+  --f-display:"Chivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1524; --panel:#171f32; --ink:#e3e9f6; --muted:#9aa6c0; --line:#2c3752; --soft:#212b43;
+  --accent:#7d9bff; --accent-ink:#0f1524;
+  --c-pre:#86a6ff; --c-pre-bg:#1f2f5c;
+  --c-sub:#f1b450; --c-sub-bg:#4a3510;
+  --c-iid:#4fd2ab; --c-iid-bg:#123f34;
+  --c-fix:#f08cc6; --c-fix-bg:#4a1d38;
+  --c-v4:#bc9bff; --c-v4-bg:#33245a;
+  --c-grp:#5cc8e2; --c-grp-bg:#123c48;
+  --c-zero:#8e98ae; --c-zero-bg:#262f45;
+  --ok:#4fd29a; --bad:#ff7d7d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1524; --panel:#171f32; --ink:#e3e9f6; --muted:#9aa6c0; --line:#2c3752; --soft:#212b43;
+  --accent:#7d9bff; --accent-ink:#0f1524;
+  --c-pre:#86a6ff; --c-pre-bg:#1f2f5c;
+  --c-sub:#f1b450; --c-sub-bg:#4a3510;
+  --c-iid:#4fd2ab; --c-iid-bg:#123f34;
+  --c-fix:#f08cc6; --c-fix-bg:#4a1d38;
+  --c-v4:#bc9bff; --c-v4-bg:#33245a;
+  --c-grp:#5cc8e2; --c-grp-bg:#123c48;
+  --c-zero:#8e98ae; --c-zero-bg:#262f45;
+  --ok:#4fd29a; --bad:#ff7d7d; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px))}
+header.top{border-bottom:1px solid var(--line);background:var(--panel)}
+header.top .wrap{padding-block:22px 0;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(28px,4.4vw,44px);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1 .v6{color:var(--accent)}
+.lede{margin:0;max-width:68ch;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;margin-top:6px}
+nav.tabs button{font:600 15px var(--f-body);color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:hover{color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main .wrap{padding-block:26px 60px;display:flex;flex-direction:column;gap:22px}
+section.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+h2{font-family:var(--f-display);font-weight:700;font-size:22px;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:700;font-size:17px;margin:0}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=text]{font:500 17px var(--f-mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:11px 13px;flex:1 1 320px;min-width:0}
+input[type=text].invalid{border-color:var(--bad)}
+.btn{font:600 14px var(--f-body);border-radius:7px;padding:9px 14px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.chip{font:500 13px var(--f-mono);border-radius:999px;padding:5px 11px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.chip:hover{border-color:var(--accent)}
+.err{color:var(--bad);font-weight:600;min-height:1.4em}
+.label{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* resumen */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.kv{background:var(--bg);border-radius:8px;padding:11px 13px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kv .v{font-family:var(--f-mono);font-size:15px;font-weight:600;word-break:break-all}
+.typebadge{display:inline-flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:6px 12px;border-radius:6px;background:var(--c-pre-bg);color:var(--c-pre)}
+
+/* barra proporcional de campos */
+.fieldbar{display:flex;height:46px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.fieldbar div{display:flex;flex-direction:column;justify-content:center;padding:0 8px;min-width:0;border-right:1px solid var(--panel);overflow:hidden}
+.fieldbar div:last-child{border-right:0}
+.fieldbar b{font:700 12px var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fieldbar span{font:500 11px var(--f-mono);opacity:.85;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px}
+.legend div{display:flex;gap:8px;align-items:flex-start;font-size:14px;max-width:520px}
+.sw{width:14px;height:14px;border-radius:3px;flex:none;margin-top:4px}
+
+/* hextetos */
+.hexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:860px){.hexgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.hexgrid{grid-template-columns:minmax(0,1fr)}}
+.hex{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--panel);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.hex:hover,.hex.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.hex .hd{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.hex .val{font:700 26px var(--f-mono);letter-spacing:.04em}
+.hex .bits{display:grid;grid-template-columns:repeat(16,1fr);gap:1px}
+.hex .bits i{font:600 10.5px var(--f-mono);text-align:center;padding:3px 0;border-radius:2px;font-style:normal}
+.hex .nib{display:grid;grid-template-columns:repeat(4,1fr);font:500 11px var(--f-mono);color:var(--muted);text-align:center}
+.hex .tag{font-size:13px;font-weight:600}
+.detail{background:var(--bg);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;border-left:4px solid var(--accent)}
+.detail p{max-width:80ch}
+
+.prefixbox{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.prefixbox{grid-template-columns:minmax(0,1fr)}}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.split{display:flex;height:22px;border-radius:4px;overflow:hidden;font:600 11px var(--f-mono)}
+.split div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
+
+.steps{display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.step{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;align-items:start}
+.step::before{counter-increment:s;content:counter(s);font:700 14px var(--f-mono);width:28px;height:28px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center}
+.step code,.codeline{font-family:var(--f-mono);font-size:15px;word-break:break-all}
+.codeline{background:var(--bg);padding:8px 12px;border-radius:6px;display:block;margin-top:4px}
+mark{background:var(--c-sub-bg);color:var(--c-sub);border-radius:3px;padding:0 2px}
+s{color:var(--bad)}
+
+.typedesc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+@media (max-width:820px){.typedesc{grid-template-columns:minmax(0,1fr)}}
+.typedesc ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+
+/* catálogo */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+@media (max-width:400px){.cards{grid-template-columns:minmax(0,1fr)}}
+.tcard{border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--panel);border-top:5px solid var(--k)}
+.tcard .cidr{font:700 18px var(--f-mono);color:var(--k)}
+.tcard .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.tcard ul{margin:0;padding-left:18px;font-size:15px}
+.tcard .foot{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--soft);font-family:var(--f-display);font-weight:700;font-size:14px}
+tr:last-child td{border-bottom:0}
+td.mono{font-variant-numeric:tabular-nums}
+
+.octets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:600px){.octets{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.oct{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.oct .val{font:700 24px var(--f-mono)}
+.oct .bits{display:grid;grid-template-columns:repeat(8,1fr);gap:1px}
+.oct .bits i{font:600 11px var(--f-mono);text-align:center;padding:3px 0;border-radius:2px;font-style:normal}
+
+.eui{display:flex;flex-direction:column;gap:14px}
+.bytes{display:flex;gap:6px;flex-wrap:wrap}
+.byte{font:700 16px var(--f-mono);padding:6px 9px;border-radius:5px;background:var(--soft)}
+.byte.ins{background:var(--c-fix-bg);color:var(--c-fix)}
+.byte.flip{background:var(--c-sub-bg);color:var(--c-sub)}
+.byte.iid{background:var(--c-iid-bg);color:var(--c-iid)}
+.twocol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:760px){.twocol{grid-template-columns:minmax(0,1fr)}}
+.note{font-size:14px;color:var(--muted)}
+[role=tabpanel]{display:flex;flex-direction:column;gap:22px}
+@media (prefers-reduced-motion:no-preference){.hex,.chip,nav.tabs button{transition:border-color .15s, box-shadow .15s, color .15s}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <span class="eyebrow">Redes · Esquemas de direccionamiento</span>
+    <h1>Simulador de direcciones <span class="v6">IPv6</span> e IPv4</h1>
+    <p class="lede">Escribe una dirección y observa cómo se divide en sus 128 bits: qué representa cada uno de los 8 grupos, a qué tipo de dirección pertenece y para qué se usa. Incluye la conversión EUI-64, un analizador IPv4 y una tabla comparativa.</p>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="t-ipv6" aria-controls="p-ipv6" aria-selected="true">Analizador IPv6</button>
+      <button role="tab" id="t-tipos" aria-controls="p-tipos" aria-selected="false">Tipos de direcciones IPv6</button>
+      <button role="tab" id="t-eui64" aria-controls="p-eui64" aria-selected="false">SLAAC / EUI-64</button>
+      <button role="tab" id="t-ipv4" aria-controls="p-ipv4" aria-selected="false">Analizador IPv4</button>
+      <button role="tab" id="t-comparar" aria-controls="p-comparar" aria-selected="false">IPv4 vs IPv6</button>
+    </nav>
+  </div>
+</header>
+
+<main><div class="wrap">
+
+<!-- ============ IPv6 ============ -->
+<div role="tabpanel" id="p-ipv6" aria-labelledby="t-ipv6">
+  <section class="panel">
+    <h2>Escribe una dirección IPv6</h2>
+    <div class="row">
+      <input type="text" id="v6in" value="2001:db8:acad:1:20c:29ff:fe3a:4b5c/64" spellcheck="false" autocomplete="off" aria-label="Dirección IPv6">
+      <button class="btn" id="v6go">Analizar</button>
+    </div>
+    <div class="row" id="v6ex"><span class="label">Ejemplos:</span></div>
+    <div class="err" id="v6err" role="alert"></div>
+    <div class="summary" id="v6sum"></div>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h2>Estructura de los 128 bits</h2>
+      <span id="v6badge"></span>
+    </div>
+    <div class="fieldbar" id="v6bar"></div>
+    <div class="legend" id="v6legend"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Los 8 grupos (hextetos) de 16 bits</h2>
+    <p class="muted">Cada grupo son 4 dígitos hexadecimales = 16 bits. Haz clic en un grupo para ver a qué hace referencia.</p>
+    <div class="hexgrid" id="v6hex"></div>
+    <div class="detail" id="v6detail"></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="v6typeTitle">Tipo de dirección</h2>
+    <div class="typedesc" id="v6type"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Prefijo de red y rango</h2>
+    <div class="prefixbox">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label class="label" for="v6pre">Longitud de prefijo: <b id="v6preval" class="mono" style="color:var(--ink);font-size:15px">/64</b></label>
+        <input type="range" id="v6pre" min="0" max="128" value="64">
+        <div class="split" id="v6split"></div>
+        <div class="row">
+          <button class="chip" data-p="32">/32 ISP</button><button class="chip" data-p="48">/48 Sitio</button><button class="chip" data-p="56">/56 Hogar</button><button class="chip" data-p="64">/64 Subred</button><button class="chip" data-p="128">/128 Host</button>
+        </div>
+      </div>
+      <div class="summary" id="v6range" style="grid-template-columns:minmax(0,1fr)"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Reglas de notación (abreviación)</h2>
+    <div class="steps" id="v6steps"></div>
+  </section>
+</div>
+
+<!-- ============ TIPOS ============ -->
+<div role="tabpanel" id="p-tipos" aria-labelledby="t-tipos" hidden>
+  <section class="panel">
+    <h2>Catálogo de tipos de direcciones IPv6</h2>
+    <p class="muted" style="max-width:85ch">IPv6 tiene tres grandes familias: <b>unicast</b> (una interfaz), <b>multicast</b> (un grupo de interfaces) y <b>anycast</b> (la interfaz más cercana de un grupo). No existe <i>broadcast</i>: su función la cumple el multicast <span class="mono">ff02::1</span>. Una misma interfaz normalmente tiene varias direcciones a la vez: una link-local obligatoria y una o más globales o ULA.</p>
+    <div class="cards" id="cards"></div>
+  </section>
+  <section class="panel">
+    <h2>Alcance (scope) de las direcciones multicast</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Valor (4.º dígito)</th><th>Alcance</th><th>Ejemplo</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">1</td><td>Interfaz local</td><td class="mono">ff01::1</td><td>Solo dentro del propio nodo (loopback de multicast).</td></tr>
+        <tr><td class="mono">2</td><td>Enlace local</td><td class="mono">ff02::2</td><td>No cruza routers; el más usado (NDP, OSPF, RIPng, DHCPv6).</td></tr>
+        <tr><td class="mono">4</td><td>Administración local</td><td class="mono">ff04::…</td><td>Alcance definido por el administrador.</td></tr>
+        <tr><td class="mono">5</td><td>Sitio local</td><td class="mono">ff05::1:3</td><td>Todo un sitio/campus (p. ej. todos los servidores DHCPv6).</td></tr>
+        <tr><td class="mono">8</td><td>Organización</td><td class="mono">ff08::…</td><td>Varios sitios de una misma organización.</td></tr>
+        <tr><td class="mono">e</td><td>Global</td><td class="mono">ff0e::…</td><td>Todo Internet.</td></tr>
+      </tbody></table></div>
+  </section>
+  <section class="panel">
+    <h2>Direcciones multicast reservadas más usadas</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Dirección</th><th>Grupo</th><th>Equivalente IPv4</th></tr></thead>
+      <tbody id="mcTable"></tbody></table></div>
+  </section>
+</div>
+
+<!-- ============ EUI-64 ============ -->
+<div role="tabpanel" id="p-eui64" aria-labelledby="t-eui64" hidden>
+  <section class="panel">
+    <h2>Cómo se forma el ID de interfaz con EUI-64</h2>
+    <p class="muted" style="max-width:85ch">Con SLAAC (autoconfiguración sin estado, RFC 4862) el host recibe del router el prefijo /64 mediante un mensaje <i>Router Advertisement</i> y construye él mismo los 64 bits del ID de interfaz. El método EUI-64 lo deriva de la dirección MAC de 48 bits. Los sistemas actuales suelen usar en su lugar un ID aleatorio por privacidad (RFC 4941 / RFC 7217).</p>
+    <div class="twocol">
+      <div style="display:flex;flex-direction:column;gap:6px"><label class="label" for="macin">Dirección MAC</label><input type="text" id="macin" value="00:0C:29:3A:4B:5C" spellcheck="false" autocomplete="off"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label class="label" for="euipre">Prefijo /64 anunciado por el router</label><input type="text" id="euipre" value="2001:db8:acad:1::" spellcheck="false" autocomplete="off"></div>
+    </div>
+    <div class="err" id="euierr" role="alert"></div>
+    <div class="eui" id="euiout"></div>
+  </section>
+</div>
+
+<!-- ============ IPv4 ============ -->
+<div role="tabpanel" id="p-ipv4" aria-labelledby="t-ipv4" hidden>
+  <section class="panel">
+    <h2>Escribe una dirección IPv4</h2>
+    <div class="row">
+      <input type="text" id="v4in" value="192.168.10.25/24" spellcheck="false" autocomplete="off" aria-label="Dirección IPv4">
+      <button class="btn" id="v4go">Analizar</button>
+    </div>
+    <div class="row" id="v4ex"><span class="label">Ejemplos:</span></div>
+    <div class="err" id="v4err" role="alert"></div>
+    <div class="summary" id="v4sum"></div>
+  </section>
+  <section class="panel">
+    <h2>Los 4 octetos (32 bits)</h2>
+    <p class="muted">IPv4 se escribe en notación decimal punteada: 4 números de 0 a 255, cada uno de 8 bits. La máscara separa la <span style="color:var(--c-pre);font-weight:700">porción de red</span> de la <span style="color:var(--c-iid);font-weight:700">porción de host</span>.</p>
+    <div class="octets" id="v4oct"></div>
+    <div class="detail" id="v4type"></div>
+  </section>
+  <section class="panel">
+    <h2>Clases de direcciones IPv4 (direccionamiento con clase)</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Clase</th><th>Primeros bits</th><th>Rango del 1.er octeto</th><th>Máscara por defecto</th><th>Redes / hosts por red</th><th>Uso</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b></td><td class="mono">0</td><td class="mono">1 – 126</td><td class="mono">255.0.0.0 (/8)</td><td>126 / 16 777 214</td><td>Redes muy grandes</td></tr>
+        <tr><td><b>B</b></td><td class="mono">10</td><td class="mono">128 – 191</td><td class="mono">255.255.0.0 (/16)</td><td>16 384 / 65 534</td><td>Redes medianas</td></tr>
+        <tr><td><b>C</b></td><td class="mono">110</td><td class="mono">192 – 223</td><td class="mono">255.255.255.0 (/24)</td><td>2 097 152 / 254</td><td>Redes pequeñas</td></tr>
+        <tr><td><b>D</b></td><td class="mono">1110</td><td class="mono">224 – 239</td><td>—</td><td>—</td><td>Multicast</td></tr>
+        <tr><td><b>E</b></td><td class="mono">1111</td><td class="mono">240 – 255</td><td>—</td><td>—</td><td>Experimental / reservado</td></tr>
+      </tbody></table></div>
+    <p class="note">El 127.x.x.x queda fuera de la clase A porque está reservado para loopback. Hoy se usa CIDR (sin clases) y la máscara se indica con <span class="mono">/n</span>, pero las clases siguen apareciendo en exámenes y en la configuración por defecto de muchos equipos.</p>
+  </section>
+  <section class="panel">
+    <h2>Rangos especiales IPv4</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Rango</th><th>Tipo</th><th>Uso</th></tr></thead>
+      <tbody id="v4ranges"></tbody></table></div>
+  </section>
+</div>
+
+<!-- ============ COMPARATIVA ============ -->
+<div role="tabpanel" id="p-comparar" aria-labelledby="t-comparar" hidden>
+  <section class="panel">
+    <h2>Esquemas de direccionamiento: IPv4 frente a IPv6</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Característica</th><th>IPv4</th><th>IPv6</th></tr></thead>
+      <tbody id="cmp"></tbody></table></div>
+  </section>
+  <section class="panel">
+    <h2>Equivalencias de direcciones</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Función</th><th>IPv4</th><th>IPv6</th></tr></thead>
+      <tbody>
+        <tr><td>Loopback</td><td class="mono">127.0.0.1</td><td class="mono">::1</td></tr>
+        <tr><td>Dirección no especificada</td><td class="mono">0.0.0.0</td><td class="mono">::</td></tr>
+        <tr><td>Direcciones privadas</td><td class="mono">10/8, 172.16/12, 192.168/16</td><td class="mono">fc00::/7 (ULA, en la práctica fd00::/8)</td></tr>
+        <tr><td>Autoconfiguración en el enlace</td><td class="mono">169.254.0.0/16 (APIPA)</td><td class="mono">fe80::/10 (link-local, siempre presente)</td></tr>
+        <tr><td>Difusión a todos</td><td class="mono">255.255.255.255 / broadcast de subred</td><td class="mono">ff02::1 (multicast todos los nodos)</td></tr>
+        <tr><td>Multicast</td><td class="mono">224.0.0.0/4</td><td class="mono">ff00::/8</td></tr>
+        <tr><td>Documentación / ejemplos</td><td class="mono">192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24</td><td class="mono">2001:db8::/32, 3fff::/20</td></tr>
+        <tr><td>Ruta por defecto</td><td class="mono">0.0.0.0/0</td><td class="mono">::/0</td></tr>
+        <tr><td>Resolución de dirección física</td><td>ARP (broadcast)</td><td>NDP: Neighbor Solicitation a la multicast de nodo solicitado <span class="mono">ff02::1:ffXX:XXXX</span></td></tr>
+      </tbody></table></div>
+  </section>
+</div>
+
+</div></main>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COL={pre:'pre',sub:'sub',iid:'iid',fix:'fix',v4:'v4',grp:'grp',zero:'zero'};
+const cv=k=>`var(--c-${k})`, cb=k=>`var(--c-${k}-bg)`;
+const fmtBig=n=>n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+
+/* ---------- Tabs ---------- */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function showTab(id){
+  tabs.forEach(t=>{const on=t.id==='t-'+id;t.setAttribute('aria-selected',on);document.getElementById(t.getAttribute('aria-controls')).hidden=!on;});
+  try{localStorage.setItem('iptab',id)}catch(e){}
+}
+tabs.forEach(t=>t.addEventListener('click',()=>{const id=t.id.slice(2);showTab(id);try{history.replaceState(null,'','#'+id)}catch(e){}}));
+let start=(location.hash||'').slice(1);
+if(!tabs.some(t=>t.id==='t-'+start)){try{start=localStorage.getItem('iptab')||'ipv6'}catch(e){start='ipv6'}}
+if(!tabs.some(t=>t.id==='t-'+start)) start='ipv6';
+showTab(start);
+
+/* ---------- IPv6 parsing ---------- */
+function parse6(raw){
+  let s=raw.trim().toLowerCase(), pre=null, zone='';
+  if(!s) throw 'Escribe una dirección IPv6.';
+  if(s.startsWith('[')){s=s.replace(/^\[|\]$/g,'')}
+  if(s.includes('/')){const p=s.split('/');if(p.length>2||!/^\d{1,3}$/.test(p[1])||+p[1]>128) throw 'La longitud de prefijo debe ser un número entre 0 y 128 (por ejemplo /64).';pre=+p[1];s=p[0];}
+  if(s.includes('%')){[s,zone]=s.split('%');}
+  if(!/^[0-9a-f:.]+$/.test(s)) throw 'Solo se permiten dígitos hexadecimales (0-9, a-f), dos puntos ":" y, al final, una IPv4 con puntos.';
+  if(/:::/.test(s)) throw 'No puede haber tres ":" seguidos.';
+  if((s.match(/::/g)||[]).length>1) throw 'El "::" solo puede aparecer una vez; si aparece dos veces no se sabría cuántos ceros representa cada uno.';
+  let tail=[];
+  if(s.includes('.')){
+    const lc=s.lastIndexOf(':');const v4=s.slice(lc+1).split('.');
+    if(v4.length!==4||v4.some(o=>!/^\d{1,3}$/.test(o)||+o>255)) throw 'La parte IPv4 incrustada no es válida.';
+    tail=[(+v4[0]<<8)|+v4[1],(+v4[2]<<8)|+v4[3]];
+    s=s.slice(0,lc+1); if(s.endsWith(':')&&!s.endsWith('::')) s=s.slice(0,-1);
+  }
+  let groups;
+  if(s.includes('::')){
+    const [l,r]=s.split('::');const L=l?l.split(':'):[],R=r?r.split(':'):[];
+    const n=L.length+R.length+tail.length; if(n>7) throw 'Hay demasiados grupos: con "::" debe haber como máximo 7 grupos escritos.';
+    groups=[...L,...Array(8-n).fill('0'),...R];
+  } else {
+    groups=s?s.split(':'):[];
+    if(groups.length+tail.length!==8) throw `Una dirección IPv6 completa tiene 8 grupos; escribiste ${groups.length+tail.length}. Usa "::" para abreviar grupos de ceros.`;
+  }
+  const h=[];
+  for(const g of groups){ if(!/^[0-9a-f]{1,4}$/.test(g)) throw `El grupo "${g}" no es válido: cada grupo tiene de 1 a 4 dígitos hexadecimales.`; h.push(parseInt(g,16)); }
+  h.push(...tail);
+  return {h,pre,zone};
+}
+const toBig=h=>h.reduce((a,x)=>(a<<16n)|BigInt(x),0n);
+const fromBig=b=>{const h=[];for(let i=7;i>=0;i--)h.push(Number((b>>BigInt(i*16))&0xffffn));return h};
+const expand=h=>h.map(x=>x.toString(16).padStart(4,'0')).join(':');
+function zeroRun(h){let best=-1,bl=0;for(let i=0;i<8;){if(h[i]===0){let j=i;while(j<8&&h[j]===0)j++;if(j-i>bl&&j-i>=2){best=i;bl=j-i}i=j}else i++}return [best,bl]}
+function compress(h){
+  const [b,l]=zeroRun(h); const g=h.map(x=>x.toString(16));
+  if(b<0) return g.join(':');
+  return g.slice(0,b).join(':')+'::'+g.slice(b+l).join(':');
+}
+const v4str=(a,b)=>[a>>8,a&255,b>>8,b&255].join('.');
+function inPrefix(big,str,len){const p=toBig(parse6(str).h);const m=len===0?0n:((1n<<128n)-1n)^((1n<<BigInt(128-len))-1n);return (big&m)===(p&m)}
+
+/* ---------- Multicast conocidos ---------- */
+const MC=[
+ ['ff02::1','Todos los nodos del enlace','255.255.255.255 (broadcast)'],
+ ['ff02::2','Todos los routers del enlace','224.0.0.2'],
+ ['ff02::5','Routers OSPFv3','224.0.0.5'],
+ ['ff02::6','Routers OSPFv3 designados (DR/BDR)','224.0.0.6'],
+ ['ff02::9','Routers RIPng','224.0.0.9'],
+ ['ff02::a','Routers EIGRP','224.0.0.10'],
+ ['ff02::d','Routers PIM','224.0.0.13'],
+ ['ff02::16','Routers MLDv2','224.0.0.22 (IGMPv3)'],
+ ['ff02::fb','mDNS (descubrimiento local de servicios)','224.0.0.251'],
+ ['ff02::1:2','Todos los agentes DHCPv6 (servidores y relays)','—'],
+ ['ff05::1:3','Todos los servidores DHCPv6 del sitio','—'],
+ ['ff02::1:ff00:0/104','Multicast de nodo solicitado (NDP)','— (ARP usa broadcast)'],
+];
+$('#mcTable').innerHTML=MC.map(r=>`<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="mono">${r[2]}</td></tr>`).join('');
+const SCOPES={1:'interfaz local',2:'enlace local',3:'reino local',4:'administración local',5:'sitio local',8:'organización',14:'global'};
+
+/* ---------- Análisis del ID de interfaz ---------- */
+function iidInfo(h){
+  const eui=(h[5]&0xff)===0xff&&(h[6]>>8)===0xfe;
+  if(eui){
+    const b=[h[4]>>8,h[4]&255,h[5]>>8,h[6]&255,h[7]>>8,h[7]&255];b[0]^=2;
+    const mac=b.map(x=>x.toString(16).padStart(2,'0')).join(':');
+    return {kind:'eui',mac,text:`Generado con <b>EUI-64</b> a partir de la MAC <span class="mono">${mac}</span>: se insertó <span class="mono">fffe</span> en medio y se invirtió el 7.º bit del primer byte.`};
+  }
+  if(h[4]===0&&h[5]===0&&h[6]===0&&h[7]<0x10000) return {kind:'man',text:'Parece asignado <b>manualmente</b> (valores cortos y fáciles de recordar, típico de routers y servidores, p. ej. <span class="mono">::1</span>).'};
+  return {kind:'rnd',text:'Parece un ID <b>aleatorio</b>: generado por SLAAC con extensiones de privacidad (RFC 4941/7217) o asignado por DHCPv6.'};
+}
+
+/* ---------- Definición de tipos IPv6 ---------- */
+const IID_NOTES=(h)=>{
+  const e=iidInfo(h).kind==='eui', B=x=>x.toString(16).padStart(2,'0');
+  return [
+   `<b>ID de interfaz, 1.ª parte.</b> Los grupos 5 a 8 (64 bits) identifican a la interfaz (host) dentro de la subred /64. ${e?`En EUI-64 aquí van los 2 primeros bytes de la MAC (<span class="mono">${B(h[4]>>8)}:${B(h[4]&255)}</span>) con el 7.º bit invertido.`:'Se obtiene por SLAAC, DHCPv6 o configuración manual.'}`,
+   `<b>ID de interfaz, 2.ª parte.</b> ${e?`Contiene el 3.er byte de la MAC (<span class="mono">${B(h[5]>>8)}</span>) seguido de <span class="mono">ff</span>, la primera mitad del relleno <span class="mono">fffe</span> que inserta EUI-64.`:'Sigue la secuencia del identificador de 64 bits del host.'}`,
+   `<b>ID de interfaz, 3.ª parte.</b> ${e?`Empieza con <span class="mono">fe</span> (segunda mitad del relleno <span class="mono">fffe</span>) y termina con el 4.º byte de la MAC (<span class="mono">${B(h[6]&255)}</span>).`:'Sigue la secuencia del identificador de 64 bits del host.'}`,
+   `<b>ID de interfaz, 4.ª parte.</b> Últimos 16 bits del host. ${e?`Corresponden al 5.º y 6.º byte de la MAC (<span class="mono">${B(h[7]>>8)}:${B(h[7]&255)}</span>).`:'Junto con los grupos 5 a 7 deben ser únicos en la subred; el host lo verifica con DAD (Detección de Direcciones Duplicadas).'}`
+  ];
+};
+const UNI_FIELDS=[[0,48,'pre','Prefijo global de enrutamiento','Bloque público asignado por IANA → RIR (LACNIC en México) → ISP → organización. Normalmente /48.'],[48,16,'sub','ID de subred','Lo define el administrador del sitio: 16 bits = 65 536 subredes /64.'],[64,64,'iid','ID de interfaz','Identifica al host dentro de la subred. 64 bits.']];
+
+const TYPES=[
+ {id:'unspec',name:'No especificada',cidr:'::/128',fam:'Unicast especial',k:'zero',rfc:'RFC 4291',test:b=>b===0n,
+  ex:'::',fields:()=>[[0,128,'zero','Todo ceros','Los 128 bits valen 0.']],
+  what:'Representa la ausencia de dirección. Nunca se asigna a una interfaz ni puede ser destino de un paquete.',
+  uses:['Dirección de origen que usa un host mientras aún no tiene IP (por ejemplo, durante DAD o al pedir dirección a DHCPv6).','En configuración de servicios significa "escuchar en todas las direcciones" (equivale a 0.0.0.0).','::/0 es la ruta por defecto en una tabla de enrutamiento.']},
+ {id:'loop',name:'Loopback',cidr:'::1/128',fam:'Unicast especial',k:'zero',rfc:'RFC 4291',test:b=>b===1n,
+  ex:'::1',fields:()=>[[0,127,'zero','127 bits en cero','Prefijo de ceros.'],[127,1,'iid','Último bit = 1','Identifica al propio equipo.']],
+  what:'Dirección con la que un equipo se envía paquetes a sí mismo. Los paquetes nunca salen a la red.',
+  uses:['Probar que la pila TCP/IPv6 funciona: ping ::1.','Comunicar servicios locales (base de datos, servidor web de desarrollo).','A diferencia de IPv4 (127.0.0.0/8, millones de direcciones), en IPv6 el loopback es una sola dirección.']},
+ {id:'mapped',name:'IPv4 mapeada en IPv6',cidr:'::ffff:0:0/96',fam:'Unicast de transición',k:'v4',rfc:'RFC 4291',test:b=>inPrefix(b,'::ffff:0:0',96),
+  ex:'::ffff:192.168.1.10',fields:()=>[[0,80,'zero','80 bits en cero','Primeros 5 grupos en cero.'],[80,16,'fix','ffff','Marca de dirección IPv4 mapeada.'],[96,32,'v4','Dirección IPv4','Los últimos 32 bits son la IPv4 original.']],
+  notes:h=>{const z='<b>Ceros de relleno.</b> Los primeros 80 bits (grupos 1 a 5) valen 0 para indicar que no es una dirección IPv6 nativa.';const v=v4str(h[6],h[7]);return [z,z,z,z,z,'<b>Marcador ffff.</b> Indica que los 32 bits siguientes son una dirección IPv4 representada dentro del formato IPv6.',`<b>Primera mitad de la IPv4.</b> <span class="mono">${h[6].toString(16)}</span> en hexadecimal = <span class="mono">${h[6]>>8}.${h[6]&255}</span> en decimal.`,`<b>Segunda mitad de la IPv4.</b> <span class="mono">${h[7].toString(16)}</span> = <span class="mono">${h[7]>>8}.${h[7]&255}</span>. Dirección IPv4 completa: <b class="mono">${v}</b>.`]},
+  what:'Permite que una aplicación IPv6 represente internamente una conexión que en realidad llega por IPv4. No viaja por la red.',
+  uses:['Sockets "dual-stack": un servidor que escucha en IPv6 ve a los clientes IPv4 como ::ffff:a.b.c.d.','Se suele escribir con la IPv4 en decimal al final: ::ffff:192.168.1.10.']},
+ {id:'nat64',name:'NAT64 (prefijo bien conocido)',cidr:'64:ff9b::/96',fam:'Unicast de transición',k:'v4',rfc:'RFC 6052',test:b=>inPrefix(b,'64:ff9b::',96),
+  ex:'64:ff9b::808:808',fields:()=>[[0,96,'fix','Prefijo 64:ff9b::/96','Prefijo de traducción.'],[96,32,'v4','IPv4 de destino','Servidor IPv4 real.']],
+  what:'Permite que equipos que solo tienen IPv6 lleguen a servidores que solo tienen IPv4. Un traductor NAT64 convierte los paquetes y DNS64 sintetiza estas direcciones.',
+  uses:['Redes móviles 4G/5G que solo entregan IPv6 a los teléfonos.','Redes corporativas "IPv6-only" que aún deben acceder a sitios IPv4.']},
+ {id:'6to4',name:'6to4',cidr:'2002::/16',fam:'Unicast de transición (obsoleto)',k:'v4',rfc:'RFC 3056 / 7526',test:b=>inPrefix(b,'2002::',16),
+  ex:'2002:c000:204:1::1',fields:()=>[[0,16,'fix','2002','Prefijo 6to4.'],[16,32,'v4','IPv4 pública del sitio','Dirección del router frontera.'],[48,16,'sub','ID de subred','Subred interna.'],[64,64,'iid','ID de interfaz','Host.']],
+  notes:h=>['<b>Prefijo 6to4 (2002).</b> Identifica el mecanismo de túnel automático 6to4.',`<b>IPv4 pública, 1.ª mitad:</b> <span class="mono">${h[1]>>8}.${h[1]&255}</span>.`,`<b>IPv4 pública, 2.ª mitad:</b> <span class="mono">${h[2]>>8}.${h[2]&255}</span>. El router frontera es <b class="mono">${v4str(h[1],h[2])}</b>.`,'<b>ID de subred</b> dentro del sitio.',...IID_NOTES(h)],
+  what:'Mecanismo de túnel que encapsula IPv6 dentro de IPv4 usando la IPv4 pública del router para formar un prefijo /48.',
+  uses:['Fue usado en la etapa temprana de transición. Hoy está desaconsejado (RFC 7526) por problemas de fiabilidad.']},
+ {id:'teredo',name:'Teredo',cidr:'2001::/32',fam:'Unicast de transición',k:'v4',rfc:'RFC 4380',test:b=>inPrefix(b,'2001::',32),
+  ex:'2001:0:4136:e378:8000:63bf:3fff:fdd2',fields:()=>[[0,32,'fix','Prefijo 2001:0000','Teredo.'],[32,32,'v4','IPv4 del servidor Teredo','Servidor de túnel.'],[64,16,'sub','Flags','Tipo de NAT.'],[80,16,'grp','Puerto UDP ofuscado','Puerto del cliente XOR ffff.'],[96,32,'v4','IPv4 del cliente ofuscada','IPv4 pública XOR ffffffff.']],
+  notes:h=>{const p=(h[5]^0xffff),a=h[6]^0xffff,c=h[7]^0xffff;return ['<b>Prefijo Teredo</b>, 1.ª parte (2001).','<b>Prefijo Teredo</b>, 2.ª parte (0000). Juntos forman 2001::/32.',`<b>Servidor Teredo</b>, 1.ª mitad: <span class="mono">${h[2]>>8}.${h[2]&255}</span>.`,`<b>Servidor Teredo</b>, 2.ª mitad. Servidor completo: <b class="mono">${v4str(h[2],h[3])}</b>.`,'<b>Flags.</b> Indican el tipo de NAT detrás del que está el cliente (el bit más alto en 1 = NAT tipo cono).',`<b>Puerto UDP ofuscado.</b> Invirtiendo todos los bits se obtiene el puerto real: <b class="mono">${p}</b>.`,`<b>IPv4 del cliente</b> (invertida bit a bit), 1.ª mitad: <span class="mono">${a>>8}.${a&255}</span>.`,`<b>IPv4 del cliente</b>, 2.ª mitad. IPv4 pública real: <b class="mono">${v4str(a,c)}</b>.`]},
+  what:'Túnel que transporta IPv6 dentro de UDP/IPv4 para atravesar routers NAT domésticos.',
+  uses:['Lo incluía Windows para dar IPv6 a equipos detrás de NAT; actualmente está en desuso.']},
+ {id:'doc',name:'Documentación',cidr:'2001:db8::/32 y 3fff::/20',fam:'Unicast reservado',k:'pre',rfc:'RFC 3849 / 9637',test:b=>inPrefix(b,'2001:db8::',32)||inPrefix(b,'3fff::',20),
+  ex:'2001:db8:acad:1::10',fields:()=>UNI_FIELDS,
+  notes:h=>['<b>Prefijo global (2001)</b>, 1.ª parte. Junto con el grupo 2 forma 2001:db8::/32, bloque reservado para ejemplos.','<b>Prefijo global (db8)</b>, 2.ª parte. Ningún router de Internet enruta este bloque: es solo para libros, manuales y prácticas.','<b>Prefijo de sitio.</b> En los ejemplos de Cisco suele ser "acad" (Academy). Completa el /48 del sitio.',`<b>ID de subred = ${h[3].toString(16)}.</b> Permite al administrador numerar hasta 65 536 subredes.`,...IID_NOTES(h)],
+  what:'Rango reservado exclusivamente para documentación, libros de texto y laboratorios. Tiene la misma estructura que una unicast global pero nunca se enruta en Internet.',
+  uses:['Ejemplos en manuales, RFC, cursos (Cisco Networking Academy usa 2001:db8:acad::/48).','Prácticas en Packet Tracer o GNS3 sin chocar con direcciones reales.']},
+ {id:'snm',name:'Multicast de nodo solicitado',cidr:'ff02::1:ff00:0/104',fam:'Multicast',k:'grp',rfc:'RFC 4291 / 4861',test:b=>inPrefix(b,'ff02::1:ff00:0',104),
+  ex:'ff02::1:ff3a:4b5c',fields:()=>[[0,104,'fix','Prefijo ff02::1:ff/104','Fijo.'],[104,24,'iid','24 bits de la unicast','Últimos 24 bits de la dirección buscada.']],
+  notes:h=>{const f='<b>Parte fija del prefijo</b> ff02:0:0:0:0:1:ff/104.';return ['<b>ff02:</b> multicast (ff) con alcance de enlace local (2).',f,f,f,f,'<b>01</b>: parte fija del prefijo.',`<b>ff${(h[6]&255).toString(16).padStart(2,'0')}:</b> "ff" fijo + el primer byte de los 24 bits finales de la dirección unicast.`,'<b>Últimos 16 bits</b> de la dirección unicast del vecino que se busca.']},
+  what:'Dirección multicast que se calcula automáticamente para cada dirección unicast de la interfaz. Sustituye al broadcast de ARP: en lugar de molestar a todos, solo escuchan los equipos cuyos últimos 24 bits coinciden.',
+  uses:['NDP (Neighbor Discovery): el mensaje Neighbor Solicitation para averiguar la MAC de un vecino se envía a esta dirección.','DAD: el host verifica que nadie más usa su dirección antes de activarla.']},
+ {id:'mcast',name:'Multicast',cidr:'ff00::/8',fam:'Multicast',k:'grp',rfc:'RFC 4291',test:b=>inPrefix(b,'ff00::',8),
+  ex:'ff02::2',fields:()=>[[0,8,'fix','ff','Identifica multicast.'],[8,4,'sub','Flags','0RPT.'],[12,4,'pre','Alcance (scope)','Hasta dónde llega.'],[16,112,'grp','ID de grupo','Grupo de receptores.']],
+  notes:h=>{const fl=(h[0]>>4)&15,sc=h[0]&15;return [`<b>ff + flags + alcance.</b> "ff" indica multicast. Flags = <span class="mono">${fl.toString(16)}</span> (${fl&1?'T=1: grupo temporal/dinámico':'T=0: grupo permanente asignado por IANA'}). Alcance = <span class="mono">${sc.toString(16)}</span> → <b>${SCOPES[sc]||'reservado'}</b>.`,...[1,2,3,4,5,6,7].map(i=>`<b>ID de grupo</b> (bits ${i*16}–${i*16+15}). Los 112 bits del grupo identifican a qué conjunto de equipos va el paquete.`)]},
+  what:'Un paquete enviado a una dirección multicast lo reciben todas las interfaces que se unieron a ese grupo. En IPv6 reemplaza por completo al broadcast.',
+  uses:['ff02::1 todos los nodos, ff02::2 todos los routers (Router Solicitation / Advertisement en SLAAC).','Protocolos de enrutamiento: OSPFv3 (ff02::5, ff02::6), RIPng (ff02::9), EIGRP (ff02::a).','Streaming de video IPTV y otros servicios de uno a muchos.']},
+ {id:'ll',name:'Link-local (enlace local)',cidr:'fe80::/10',fam:'Unicast',k:'fix',rfc:'RFC 4291',test:b=>inPrefix(b,'fe80::',10),
+  ex:'fe80::20c:29ff:fe3a:4b5c',fields:h=>[[0,10,'fix','Prefijo fe80::/10','Fijo.'],[10,54,'zero','54 bits en cero','Relleno.'],[64,64,'iid','ID de interfaz','Host.']],
+  notes:h=>['<b>fe80:</b> los primeros 10 bits (1111 1110 10) identifican una dirección link-local. El resto del grupo se deja en cero.','<b>Ceros.</b> Este tipo no lleva prefijo global ni ID de subred porque nunca sale del enlace.','<b>Ceros</b> (continúa el relleno).','<b>Ceros</b> (fin del prefijo /64 fe80::/64).',...IID_NOTES(h)],
+  what:'Toda interfaz con IPv6 activo genera obligatoriamente una dirección link-local, aunque no tenga ninguna otra. Solo sirve dentro del mismo segmento (enlace): los routers nunca la reenvían.',
+  uses:['Descubrimiento de vecinos (NDP) y de routers: el router anuncia el prefijo desde su link-local.','Es la dirección de "siguiente salto" (next hop) en las tablas de enrutamiento IPv6 y en OSPFv3, EIGRP, RIPng.','Como puede repetirse en varias interfaces, al usarla se indica la interfaz: fe80::1%eth0.','En routers Cisco se suele fijar manualmente: ipv6 address fe80::1 link-local.']},
+ {id:'ula',name:'Unique Local (ULA)',cidr:'fc00::/7',fam:'Unicast',k:'sub',rfc:'RFC 4193',test:b=>inPrefix(b,'fc00::',7),
+  ex:'fd12:3456:789a:10::25',fields:()=>[[0,8,'fix','fd (prefijo + bit L)','fc00::/7 con L=1.'],[8,40,'pre','Global ID (40 bits)','Aleatorio.'],[48,16,'sub','ID de subred','Subred.'],[64,64,'iid','ID de interfaz','Host.']],
+  notes:h=>[`<b>${(h[0]>>8).toString(16)} + inicio del Global ID.</b> Los 7 primeros bits (1111 110) indican ULA y el 8.º es el bit L (1 = asignada localmente, por eso en la práctica siempre empieza con <span class="mono">fd</span>). El byte <span class="mono">${(h[0]&255).toString(16).padStart(2,'0')}</span> ya pertenece al Global ID.`,'<b>Global ID</b> (continúa). Son 40 bits generados al azar para que dos organizaciones que se fusionen no tengan conflicto.','<b>Global ID</b> (final). Junto con fd forma el prefijo /48 de la organización.',`<b>ID de subred = ${h[3].toString(16)}.</b> Igual que en las globales: 65 536 subredes posibles.`,...IID_NOTES(h)],
+  what:'Equivalente IPv6 de las direcciones privadas de IPv4 (10/8, 172.16/12, 192.168/16). Se enrutan dentro de la organización pero no en Internet.',
+  uses:['Redes internas, laboratorios, servidores que no deben ser accesibles desde Internet.','Comunicación interna estable aunque cambie el prefijo global del ISP.','A diferencia de IPv4, no requieren NAT: se combinan con direcciones globales en la misma interfaz.']},
+ {id:'gua',name:'Unicast global (GUA)',cidr:'2000::/3',fam:'Unicast',k:'pre',rfc:'RFC 4291 / 3587',test:b=>inPrefix(b,'2000::',3),
+  ex:'2800:a4:2c15:7::1',fields:()=>UNI_FIELDS,
+  notes:h=>[`<b>Prefijo global de enrutamiento, 1.ª parte.</b> Los 3 primeros bits <span class="mono">001</span> marcan una unicast global (2000::/3). IANA reparte estos bloques a los registros regionales: LACNIC, que atiende a México y Latinoamérica, administra 2800::/12.`,'<b>Prefijo global, 2.ª parte.</b> Los grupos 1 y 2 suelen formar el bloque /32 que el registro regional asigna a un ISP o gran organización.','<b>Prefijo global, 3.ª parte.</b> Completa el /48 que el ISP entrega a un sitio (empresa, universidad). Esta es la parte que los routers de Internet usan para llegar al sitio.',`<b>ID de subred = ${h[3].toString(16)}.</b> El administrador numera aquí sus subredes (VLAN, pisos, edificios): de 0 a ffff = 65 536 subredes /64.`,...IID_NOTES(h)],
+  what:'Dirección pública, única en todo Internet y enrutable globalmente. Es el equivalente de una IPv4 pública, pero sin necesidad de NAT.',
+  uses:['Navegar y publicar servicios en Internet.','Un hogar recibe normalmente un /56 o /64; una empresa un /48.','Se configura de forma manual, por SLAAC (el router anuncia el prefijo /64) o por DHCPv6.','Actualmente IANA solo asigna dentro de 2000::/3 (direcciones que empiezan con 2 o 3).']},
+];
+const OTHER={id:'res',name:'Reservado / sin asignar',cidr:'—',fam:'—',k:'zero',rfc:'RFC 4291',fields:()=>[[0,128,'zero','Espacio no asignado','IANA no ha asignado este rango.']],what:'La dirección cae en un rango que IANA aún no asigna o tiene reservado. No debería verse en una red real.',uses:['Revisa si hay un error de escritura en el primer grupo.']};
+const typeOf=b=>TYPES.find(t=>t.test(b))||OTHER;
+
+/* ---------- Render IPv6 ---------- */
+let cur=null, selHex=0;
+const EX6=['2001:db8:acad:1:20c:29ff:fe3a:4b5c/64','fe80::1','fd12:3456:789a:10::25/64','ff02::1:ff3a:4b5c','ff02::2','::1','::','::ffff:192.168.1.10','2002:c000:204:1::1','2001:0:4136:e378:8000:63bf:3fff:fdd2','2800:a4:2c15:7::1/48'];
+$('#v6ex').insertAdjacentHTML('beforeend',EX6.map(e=>`<button class="chip" data-a="${e}">${e}</button>`).join(''));
+$('#v6ex').addEventListener('click',e=>{const a=e.target.dataset.a;if(a){$('#v6in').value=a;run6()}});
+
+function bitColor(fields,bit){for(const f of fields) if(bit>=f[0]&&bit<f[0]+f[1]) return f[2];return 'zero'}
+function run6(){
+  let r;
+  try{r=parse6($('#v6in').value);$('#v6err').textContent='';$('#v6in').classList.remove('invalid')}
+  catch(e){$('#v6err').textContent=e;$('#v6in').classList.add('invalid');return}
+  const big=toBig(r.h), t=typeOf(big), fields=t.fields(r.h);
+  cur={h:r.h,big,t,fields};
+  if(r.pre!==null){$('#v6pre').value=r.pre}
+  else $('#v6pre').value=(t.id==='loop'||t.id==='unspec')?128:(t.id==='mcast'||t.id==='snm')?8:64;
+  // resumen
+  const bin=r.h.map(x=>x.toString(2).padStart(16,'0')).join('');
+  $('#v6sum').innerHTML=[
+    ['Forma comprimida (RFC 5952)',compress(r.h)+(r.zone?'%'+esc(r.zone):'')],
+    ['Forma completa (expandida)',expand(r.h)],
+    ['Tipo',t.name],
+    ['Familia',t.fam],
+  ].map(([k,v])=>`<div class="kv"><span class="label">${k}</span><span class="v">${esc(v)}</span></div>`).join('');
+  $('#v6badge').innerHTML=`<span class="typebadge" style="background:${cb(t.k)};color:${cv(t.k)}">${t.name} · <span class="mono">${t.cidr}</span></span>`;
+  // barra
+  $('#v6bar').innerHTML=fields.map(f=>`<div style="flex:${Math.max(f[1],6)} 1 0;background:${cb(f[2])};color:${cv(f[2])}" title="${f[3]} (${f[1]} bits)"><b>${f[3]}</b><span>${f[1]} bits · ${f[0]}–${f[0]+f[1]-1}</span></div>`).join('');
+  $('#v6legend').innerHTML=fields.map(f=>`<div><span class="sw" style="background:${cv(f[2])}"></span><span><b>${f[3]}</b> (${f[1]} bits). ${f[4]}</span></div>`).join('');
+  // hextetos
+  const notes=t.notes?t.notes(r.h):null;
+  cur.notes=notes;
+  $('#v6hex').innerHTML=r.h.map((x,i)=>{
+    const bits=x.toString(2).padStart(16,'0');
+    const main=bitColor(fields,i*16+8);
+    const names=[...new Set(fields.filter(f=>f[0]<(i+1)*16&&f[0]+f[1]>i*16).map(f=>f[3]))].join(' + ');
+    return `<button class="hex${i===selHex?' sel':''}" data-i="${i}" aria-label="Grupo ${i+1}">
+      <div class="hd"><span class="label">Grupo ${i+1} · bits ${i*16}–${i*16+15}</span></div>
+      <span class="val" style="color:${cv(main)}">${x.toString(16).padStart(4,'0')}</span>
+      <div class="nib">${[0,1,2,3].map(n=>`<span>${bits.slice(n*4,n*4+4)}</span>`).join('')}</div>
+      <div class="bits">${[...bits].map((b,j)=>{const k=bitColor(fields,i*16+j);return `<i style="background:${cb(k)};color:${cv(k)}">${b}</i>`}).join('')}</div>
+      <span class="tag" style="color:${cv(main)}">${names}</span></button>`}).join('');
+  showHex(selHex);
+  // tipo
+  const iid=(['gua','doc','ula','ll','6to4'].includes(t.id))?`<p><b>ID de interfaz:</b> ${iidInfo(r.h).text}</p>`:'';
+  let extra='';
+  if(t.id==='mcast'||t.id==='snm'){const k=MC.find(m=>!m[0].includes('/')&&compress(parse6(m[0]).h)===compress(r.h));if(k)extra=`<p><b>Grupo reconocido:</b> ${k[1]}.</p>`}
+  if(t.id==='snm')extra+=`<p>La reciben las interfaces cuya unicast termina en <span class="mono">…${(r.h[6]&255).toString(16).padStart(2,'0')}:${r.h[7].toString(16).padStart(4,'0')}</span>.</p>`;
+  $('#v6typeTitle').textContent='Tipo de dirección: '+t.name;
+  $('#v6type').innerHTML=`<div style="display:flex;flex-direction:column;gap:10px"><p>${t.what}</p>${extra}${iid}<p class="note">Rango: <span class="mono">${t.cidr}</span> · Definido en ${t.rfc}</p></div>
+    <div style="display:flex;flex-direction:column;gap:8px"><h3>Uso e implementación</h3><ul>${t.uses.map(u=>`<li>${u}</li>`).join('')}</ul></div>`;
+  runPrefix(); steps6(r.h);
+}
+function showHex(i){
+  if(!cur) return; selHex=i;
+  document.querySelectorAll('.hex').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
+  const x=cur.h[i], hx=x.toString(16).padStart(4,'0');
+  let note=cur.notes?cur.notes[i]:null;
+  if(!note){note=cur.fields.filter(f=>f[0]<(i+1)*16&&f[0]+f[1]>i*16).map(f=>`<b>${f[3]}.</b> ${f[4]}`).join(' ')}
+  $('#v6detail').innerHTML=`<span class="label">Grupo ${i+1} de 8 · bits ${i*16} a ${i*16+15}</span>
+    <p><span class="mono" style="font-size:18px;font-weight:700">${hx}</span> <span class="muted">= ${x.toString(2).padStart(16,'0').replace(/(.{4})/g,'$1 ').trim()} (binario) = ${x} (decimal)</span></p>
+    <p>${note}</p>`;
+}
+$('#v6hex').addEventListener('click',e=>{const b=e.target.closest('.hex');if(b)showHex(+b.dataset.i)});
+$('#v6go').addEventListener('click',run6);
+$('#v6in').addEventListener('keydown',e=>{if(e.key==='Enter')run6()});
+$('#v6in').addEventListener('input',()=>{clearTimeout(window._t6);window._t6=setTimeout(run6,350)});
+
+function runPrefix(){
+  if(!cur) return;
+  const p=+$('#v6pre').value; $('#v6preval').textContent='/'+p;
+  const full=(1n<<128n)-1n, hostMask=p===128?0n:((1n<<BigInt(128-p))-1n), mask=full^hostMask;
+  const net=cur.big&mask, last=net|hostMask, count=1n<<BigInt(128-p);
+  $('#v6split').innerHTML=`<div style="flex:${Math.max(p,1)};background:${cb('pre')};color:${cv('pre')}">${p?'Red '+p+' bits':''}</div><div style="flex:${Math.max(128-p,1)};background:${cb('iid')};color:${cv('iid')}">${128-p?'Host '+(128-p)+' bits':''}</div>`;
+  let subs='';
+  if(p<=64) subs=`<div class="kv"><span class="label">Subredes /64 que caben</span><span class="v">${fmtBig(1n<<BigInt(64-p))}</span></div>`;
+  $('#v6range').innerHTML=`<div class="kv"><span class="label">Prefijo de red</span><span class="v">${compress(fromBig(net))}/${p}</span></div>
+    <div class="kv"><span class="label">Primera dirección</span><span class="v">${expand(fromBig(net))}</span></div>
+    <div class="kv"><span class="label">Última dirección</span><span class="v">${expand(fromBig(last))}</span></div>
+    <div class="kv"><span class="label">Total de direcciones (2^${128-p})</span><span class="v">${fmtBig(count)}</span></div>${subs}`;
+}
+$('#v6pre').addEventListener('input',runPrefix);
+document.querySelectorAll('[data-p]').forEach(b=>b.addEventListener('click',()=>{$('#v6pre').value=b.dataset.p;runPrefix()}));
+
+function steps6(h){
+  const full=h.map(x=>x.toString(16).padStart(4,'0'));
+  const noLead=h.map(x=>x.toString(16));
+  const [b,l]=zeroRun(h);
+  const s1=full.map(g=>{const m=g.match(/^0+(?=.)/);return m?`<s>${m[0]}</s>${g.slice(m[0].length)}`:g}).join(':');
+  const s2=noLead.map((g,i)=>b>=0&&i>=b&&i<b+l?`<mark>${g}</mark>`:g).join(':');
+  $('#v6steps').innerHTML=`
+   <div class="step"><div><b>Forma completa:</b> 8 grupos de 4 dígitos hexadecimales separados por ":" (32 dígitos = 128 bits).<span class="codeline">${full.join(':')}</span></div></div>
+   <div class="step"><div><b>Regla 1, omitir ceros a la izquierda</b> de cada grupo (solo los iniciales: <span class="mono">0db8</span> → <span class="mono">db8</span>, pero <span class="mono">a000</span> no cambia).<span class="codeline">${s1}</span><span class="codeline">${noLead.join(':')}</span></div></div>
+   <div class="step"><div><b>Regla 2, sustituir con "::"</b> la secuencia más larga de grupos consecutivos en cero (dos o más). Solo se permite una vez; si hay empate se elige la primera. ${b<0?'<br>Esta dirección no tiene dos o más grupos de ceros consecutivos, así que no se aplica.':''}<span class="codeline">${s2}</span><span class="codeline"><b>${compress(h)}</b></span></div></div>
+   <div class="step"><div><b>Minúsculas:</b> el estándar RFC 5952 recomienda escribir los dígitos a–f en minúsculas para que cada dirección tenga una única representación de texto.</div></div>`;
+}
+
+/* ---------- Catálogo ---------- */
+$('#cards').innerHTML=[...TYPES].reverse().map(t=>`<article class="tcard" style="--k:${cv(t.k)}">
+  <div class="meta"><span>${t.fam}</span><span>${t.rfc}</span></div>
+  <h3>${t.name}</h3><span class="cidr">${t.cidr}</span>
+  <p>${t.what}</p><ul>${t.uses.slice(0,3).map(u=>`<li>${u}</li>`).join('')}</ul>
+  <div class="foot"><button class="chip" data-load="${t.ex}">Analizar ${t.ex}</button></div></article>`).join('')
+ +`<article class="tcard" style="--k:${cv('pre')}"><div class="meta"><span>Anycast</span><span>RFC 4291</span></div><h3>Anycast</h3><span class="cidr">(usa el espacio unicast)</span>
+  <p>Una misma dirección unicast se asigna a varias interfaces en distintos equipos; el paquete llega solo a la más cercana según el enrutamiento. No tiene un prefijo propio: se distingue por configuración.</p>
+  <ul><li>Servidores DNS raíz y CDN distribuidos por el mundo.</li><li>Anycast de router de subred: prefijo /64 con ID de interfaz en ceros (p. ej. 2001:db8:acad:1::).</li></ul></article>`;
+$('#cards').addEventListener('click',e=>{const a=e.target.dataset.load;if(a){$('#v6in').value=a;showTab('ipv6');selHex=0;run6();window.scrollTo({top:0,behavior:'smooth'})}});
+
+/* ---------- EUI-64 ---------- */
+function runEui(){
+  const raw=$('#macin').value.trim();const hex=raw.replace(/[^0-9a-fA-F]/g,'').toLowerCase();
+  if(hex.length!==12||!/^[0-9a-fA-F:\-. ]+$/.test(raw)){$('#euierr').textContent='La MAC debe tener 12 dígitos hexadecimales (por ejemplo 00:0C:29:3A:4B:5C o 000c.293a.4b5c).';$('#euiout').innerHTML='';return}
+  let pre; try{pre=parse6($('#euipre').value.replace(/\/\d+$/,'')).h.slice(0,4)}catch(e){$('#euierr').textContent='Prefijo no válido: '+e;return}
+  $('#euierr').textContent='';
+  const b=hex.match(/../g);const f=parseInt(b[0],16),f2=f^2;
+  const iidB=[f2.toString(16).padStart(2,'0'),b[1],b[2],'ff','fe',b[3],b[4],b[5]];
+  const iid=[0,2,4,6].map(i=>parseInt(iidB[i]+iidB[i+1],16));
+  const ll=compress([0xfe80,0,0,0,...iid]), gua=compress([...pre,...iid]);
+  const bit=x=>x.toString(2).padStart(8,'0');
+  $('#euiout').innerHTML=`<div class="steps">
+   <div class="step"><div><b>MAC de 48 bits.</b> Los 3 primeros bytes son el OUI (fabricante) y los 3 últimos el número de serie de la tarjeta.<div class="bytes" style="margin-top:6px">${b.map((x,i)=>`<span class="byte">${x}</span>${i===2?'<span class="muted" style="align-self:center">|</span>':''}`).join('')}</div></div></div>
+   <div class="step"><div><b>Dividir a la mitad e insertar <span class="mono">ff:fe</span></b> para completar 64 bits.<div class="bytes" style="margin-top:6px">${[b[0],b[1],b[2]].map(x=>`<span class="byte">${x}</span>`).join('')}<span class="byte ins">ff</span><span class="byte ins">fe</span>${[b[3],b[4],b[5]].map(x=>`<span class="byte">${x}</span>`).join('')}</div></div></div>
+   <div class="step"><div><b>Invertir el 7.º bit (bit U/L) del primer byte.</b> <span class="mono">${b[0]}</span> = <span class="mono">${bit(f).slice(0,6)}<mark>${bit(f)[6]}</mark>${bit(f)[7]}</span> → <span class="mono">${bit(f2).slice(0,6)}<mark>${bit(f2)[6]}</mark>${bit(f2)[7]}</span> = <span class="mono">${f2.toString(16).padStart(2,'0')}</span>. ${f&2?'El bit pasa de 1 a 0.':'El bit pasa de 0 a 1 (en IPv6, 1 significa "identificador universal").'}<div class="bytes" style="margin-top:6px"><span class="byte flip">${iidB[0]}</span>${iidB.slice(1).map((x,i)=>`<span class="byte${i===2||i===3?' ins':''}">${x}</span>`).join('')}</div></div></div>
+   <div class="step"><div><b>Agrupar en 4 hextetos:</b> este es el ID de interfaz (grupos 5 a 8).<span class="codeline">${iid.map(x=>x.toString(16).padStart(4,'0')).join(':')}</span></div></div>
+   <div class="step"><div><b>Anteponer el prefijo</b> para formar las direcciones de la interfaz.
+     <span class="codeline">Link-local: <b>${ll}</b></span><span class="codeline">Global (SLAAC): <b>${gua}</b>/64</span>
+     <div class="row" style="margin-top:8px"><button class="chip" data-load6="${gua}/64">Analizar la global</button><button class="chip" data-load6="${ll}">Analizar la link-local</button></div></div></div></div>`;
+}
+$('#macin').addEventListener('input',runEui);$('#euipre').addEventListener('input',runEui);
+$('#euiout').addEventListener('click',e=>{const a=e.target.dataset.load6;if(a){$('#v6in').value=a;showTab('ipv6');run6();window.scrollTo({top:0,behavior:'smooth'})}});
+
+/* ---------- IPv4 ---------- */
+const R4=[
+ ['0.0.0.0/8','Esta red','Dirección de origen antes de tener IP; 0.0.0.0 = "todas las interfaces" o ruta por defecto.'],
+ ['10.0.0.0/8','Privada (RFC 1918)','Redes internas grandes; requiere NAT para salir a Internet.'],
+ ['100.64.0.0/10','CGNAT compartida (RFC 6598)','Usada por ISP entre su NAT de operador y los clientes.'],
+ ['127.0.0.0/8','Loopback','Pruebas en el propio equipo (127.0.0.1).'],
+ ['169.254.0.0/16','Link-local / APIPA','Autoasignada cuando no responde el servidor DHCP.'],
+ ['172.16.0.0/12','Privada (RFC 1918)','Redes internas medianas (172.16.0.0 – 172.31.255.255).'],
+ ['192.0.2.0/24','Documentación (TEST-NET-1)','Ejemplos en libros y manuales.'],
+ ['192.168.0.0/16','Privada (RFC 1918)','Redes domésticas y de oficina pequeña.'],
+ ['198.18.0.0/15','Pruebas de rendimiento','Benchmarking de equipos de red.'],
+ ['198.51.100.0/24','Documentación (TEST-NET-2)','Ejemplos en libros y manuales.'],
+ ['203.0.113.0/24','Documentación (TEST-NET-3)','Ejemplos en libros y manuales.'],
+ ['224.0.0.0/4','Multicast (clase D)','Envío a grupos: OSPF 224.0.0.5, RIPv2 224.0.0.9, IPTV.'],
+ ['255.255.255.255/32','Broadcast limitado','Todos los equipos del segmento local.'],
+ ['240.0.0.0/4','Reservada (clase E)','Experimental, no utilizable.'],
+];
+$('#v4ranges').innerHTML=R4.map(r=>`<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+const ip2n=s=>s.split('.').reduce((a,o)=>(a*256)+(+o),0)>>>0;
+const n2ip=n=>[24,16,8,0].map(s=>(n>>>s)&255).join('.');
+const mask4=p=>p===0?0:(0xffffffff<<(32-p))>>>0;
+function type4(n){
+  for(const r of R4){const [a,p]=r[0].split('/');const m=mask4(+p);if(((n&m)>>>0)===((ip2n(a)&m)>>>0))return r}
+  return [null,'Pública','Dirección enrutable en Internet, asignada por LACNIC/ISP. Única a nivel mundial.'];
+}
+const EX4=['192.168.10.25/24','10.1.50.200/16','172.20.5.9/20','8.8.8.8','127.0.0.1','169.254.33.7','224.0.0.5','100.72.14.3/10','200.33.146.1/30'];
+$('#v4ex').insertAdjacentHTML('beforeend',EX4.map(e=>`<button class="chip" data-a="${e}">${e}</button>`).join(''));
+$('#v4ex').addEventListener('click',e=>{const a=e.target.dataset.a;if(a){$('#v4in').value=a;run4()}});
+function run4(){
+  const raw=$('#v4in').value.trim();const m=raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\/(\d{1,2}))?$/);
+  if(!m||m.slice(1,5).some(o=>+o>255)||(m[5]!==undefined&&+m[5]>32)){$('#v4err').textContent='Escribe 4 números de 0 a 255 separados por puntos y, opcionalmente, /0 a /32 (ejemplo: 192.168.1.10/24).';$('#v4in').classList.add('invalid');return}
+  $('#v4err').textContent='';$('#v4in').classList.remove('invalid');
+  const o=m.slice(1,5).map(Number), n=ip2n(o.join('.'));
+  const cls=o[0]<128?'A':o[0]<192?'B':o[0]<224?'C':o[0]<240?'D':'E';
+  const defP={A:8,B:16,C:24}[cls];
+  const p=m[5]!==undefined?+m[5]:(defP??32);
+  const mk=mask4(p), net=(n&mk)>>>0, bc=(net|(~mk>>>0))>>>0;
+  const total=2**(32-p);
+  const hosts=p===32?1:p===31?2:total-2;
+  const first=p>=31?net:net+1, last=p>=31?bc:bc-1;
+  const t=type4(n);
+  $('#v4sum').innerHTML=[
+   ['Clase',cls+(defP?` (máscara por defecto /${defP})`:cls==='D'?' (multicast)':' (reservada)')],
+   ['Tipo',t[1]],
+   ['Máscara',`${n2ip(mk)} (/${p})`],
+   ['Wildcard (ACL / OSPF)',n2ip((~mk)>>>0)],
+   ['Dirección de red',n2ip(net)],
+   ['Broadcast',p>=31?'— (no aplica en /'+p+')':n2ip(bc)],
+   ['Rango de hosts utilizables',`${n2ip(first)} – ${n2ip(last)}`],
+   ['Hosts utilizables',`${hosts.toLocaleString('es-MX')}${p<31?` (2^${32-p} − 2)`:''}`],
+  ].map(([k,v])=>`<div class="kv"><span class="label">${k}</span><span class="v">${v}</span></div>`).join('');
+  $('#v4oct').innerHTML=o.map((x,i)=>{const bits=x.toString(2).padStart(8,'0');return `<div class="oct"><span class="label">Octeto ${i+1} · bits ${i*8}–${i*8+7}</span><span class="val">${x}</span>
+    <div class="bits">${[...bits].map((b,j)=>{const k=(i*8+j)<p?'pre':'iid';return `<i style="background:${cb(k)};color:${cv(k)}">${b}</i>`}).join('')}</div>
+    <span class="note">Máscara: ${(mk>>>(24-i*8))&255}</span></div>`}).join('');
+  $('#v4type').innerHTML=`<span class="label">Tipo de dirección</span><p><b>${t[1]}${t[0]?` · <span class="mono">${t[0]}</span>`:''}.</b> ${t[2]}</p>
+   <p>Los primeros <b>${p} bits</b> identifican la red y los <b>${32-p} bits</b> restantes al host. ${n===net&&p<31?'Esta es la <b>dirección de red</b>: no se puede asignar a un equipo.':n===bc&&p<31?'Esta es la <b>dirección de broadcast</b> de la subred: no se puede asignar a un equipo.':''}</p>`;
+}
+$('#v4go').addEventListener('click',run4);
+$('#v4in').addEventListener('keydown',e=>{if(e.key==='Enter')run4()});
+$('#v4in').addEventListener('input',()=>{clearTimeout(window._t4);window._t4=setTimeout(run4,350)});
+
+/* ---------- Comparativa ---------- */
+const CMP=[
+ ['Longitud','32 bits','128 bits'],
+ ['Cantidad de direcciones','2³² ≈ 4 300 millones','2¹²⁸ ≈ 340 sextillones (3.4 × 10³⁸)'],
+ ['Notación','Decimal punteada: 4 octetos (192.168.1.1)','Hexadecimal: 8 grupos de 16 bits separados por ":" (2001:db8::1)'],
+ ['Abreviación','No existe','Omitir ceros a la izquierda y "::" una sola vez'],
+ ['División de la dirección','Red + host, según máscara (clases A/B/C o CIDR)','Prefijo global (48) + ID de subred (16) + ID de interfaz (64)'],
+ ['Máscara','Decimal (255.255.255.0) o /24','Solo longitud de prefijo (/64)'],
+ ['Tamaño típico de subred LAN','/24 = 254 hosts','/64 = 18.4 trillones de direcciones'],
+ ['Tipos de dirección','Unicast, broadcast, multicast','Unicast, multicast, anycast (sin broadcast)'],
+ ['Configuración automática','DHCP o APIPA','SLAAC, DHCPv6 con o sin estado; link-local siempre presente'],
+ ['Direcciones por interfaz','Normalmente una','Varias simultáneas (link-local + global + ULA + temporales)'],
+ ['NAT','Indispensable por escasez de direcciones','No es necesario: comunicación extremo a extremo'],
+ ['Resolución de MAC','ARP','NDP (ICMPv6)'],
+ ['Cabecera','20 a 60 bytes, 12 campos, con checksum','40 bytes fijos, 8 campos, sin checksum, cabeceras de extensión'],
+ ['Fragmentación','Routers y origen','Solo el origen (Path MTU Discovery)'],
+ ['IPsec','Opcional','Integrado en el diseño (cabeceras AH/ESP)'],
+ ['Registro DNS','A','AAAA'],
+];
+$('#cmp').innerHTML=CMP.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+
+$('#v6pre').value=64; run6(); run4(); runEui();
+})();
+</script>
+
+</body></html>
