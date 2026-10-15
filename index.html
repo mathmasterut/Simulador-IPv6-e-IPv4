@@ -1,9 +1,15 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Simulador IPv6 e IPv4</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@500;700;900&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap">
 <style>
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+
 /* Layout: banda de encabezado + pestañas; cada pestaña es un banco de trabajo con el diagrama de bits al centro, estilo diagrama de cabecera RFC */
 :root{
   --bg:#eef1f6; --panel:#ffffff; --ink:#14203a; --muted:#56637d; --line:#d3d9e6; --soft:#e3e8f1;
@@ -155,20 +161,71 @@ td.mono{font-variant-numeric:tabular-nums}
 @media (max-width:760px){.twocol{grid-template-columns:minmax(0,1fr)}}
 .note{font-size:14px;color:var(--muted)}
 [role=tabpanel]{display:flex;flex-direction:column;gap:22px}
+/* router */
+.chassis-scroll,.pkt-scroll{overflow-x:auto;padding-bottom:4px}
+.chassis{min-width:640px;border:2px solid var(--ink);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"cpu cpu ram ram flash psu" "cpu cpu nvram rom flash psu" "slot slot slot fan fan psu";gap:10px;border:1px dashed var(--line);border-radius:8px;padding:12px 10px 10px;position:relative}
+.board::before{content:"Placa base (motherboard)";position:absolute;top:-9px;left:12px;background:var(--bg);padding:0 6px;font:600 11px var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.rear{display:flex;gap:8px;flex-wrap:wrap;border-top:2px solid var(--ink);padding-top:12px;align-items:stretch}
+.rear .ttl{font:600 11px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;width:100%}
+.comp{font:inherit;color:var(--k);background:var(--kb);border:1.5px solid var(--k);border-radius:7px;padding:10px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:58px;justify-content:center}
+.comp b{font:700 14px var(--f-display)}
+.comp span{font-size:12px;opacity:.9;color:var(--ink)}
+.comp:hover,.comp.sel{box-shadow:0 0 0 3px var(--k)}
+.comp.glow{animation:glow 1.2s ease-in-out infinite alternate}
+@keyframes glow{from{box-shadow:0 0 0 0 var(--k)}to{box-shadow:0 0 0 5px var(--k)}}
+.rear .comp{flex:1 1 90px;min-height:64px}
+.port{display:flex;gap:4px;margin-bottom:3px}
+.port i{width:16px;height:12px;border:2px solid var(--k);border-radius:2px;display:block}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.boot{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.boot{grid-template-columns:minmax(0,1fr)}}
+.bstep{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px;opacity:.5}
+.bstep.on{opacity:1;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.bstep.done{opacity:.85}
+.bstep .n{font:700 12px var(--f-mono);color:var(--accent);letter-spacing:.08em}
+/* paquetes */
+.encap{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--line);font-size:13px;min-height:64px}
+.encap div{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:6px 4px;min-width:0;border-right:1px solid var(--panel)}
+.encap b{font:700 13px var(--f-display)}
+.encap span{font:500 11px var(--f-mono)}
+@media (max-width:560px){.encap{flex-direction:column}.encap div{border-right:0;border-bottom:1px solid var(--panel);flex:none!important}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.segb{font:600 14px var(--f-body);padding:8px 18px;border:0;background:var(--panel);color:var(--muted);cursor:pointer}
+.segb[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.pkt{min-width:700px;display:grid;grid-template-columns:repeat(32,minmax(0,1fr));gap:2px}
+.pkt .ruler{font:500 10px var(--f-mono);color:var(--muted);text-align:center;padding-bottom:2px}
+.pf{font:inherit;color:var(--ink);background:var(--kb);border:1.5px solid var(--k);border-radius:4px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;min-height:56px;min-width:0;overflow:hidden}
+.pf b{font:700 13px var(--f-display);color:var(--k);line-height:1.15}
+.pf span{font:500 11px var(--f-mono);color:var(--muted)}
+.pf em{font:600 11.5px var(--f-mono);font-style:normal;word-break:break-all}
+.pf.opt{border-style:dashed}
+.pf:hover,.pf.sel{box-shadow:0 0 0 3px var(--k)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.chain .lnk{border:1.5px solid var(--k);background:var(--kb);color:var(--ink);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column}
+.chain .lnk b{color:var(--k);font:700 13px var(--f-display)}
+.chain .lnk span{font:500 11px var(--f-mono)}
+.chain .arr{color:var(--muted);font-family:var(--f-mono)}
+@media (prefers-reduced-motion:reduce){.comp.glow{animation:none;box-shadow:0 0 0 4px var(--k)}}
 @media (prefers-reduced-motion:no-preference){.hex,.chip,nav.tabs button{transition:border-color .15s, box-shadow .15s, color .15s}}
 </style>
+</head>
+<body>
 
 <header class="top">
   <div class="wrap">
     <span class="eyebrow">Redes · Esquemas de direccionamiento</span>
     <h1>Simulador de direcciones <span class="v6">IPv6</span> e IPv4</h1>
-    <p class="lede">Escribe una dirección y observa cómo se divide en sus 128 bits: qué representa cada uno de los 8 grupos, a qué tipo de dirección pertenece y para qué se usa. Incluye la conversión EUI-64, un analizador IPv4 y una tabla comparativa.</p>
+    <p class="lede">Escribe una dirección y observa cómo se divide en sus 128 bits: qué representa cada uno de los 8 grupos, a qué tipo de dirección pertenece y para qué se usa. Incluye la conversión EUI-64, un analizador IPv4, una tabla comparativa, los componentes de un router y la estructura de los paquetes IPv4 e IPv6.</p>
     <nav class="tabs" role="tablist">
       <button role="tab" id="t-ipv6" aria-controls="p-ipv6" aria-selected="true">Analizador IPv6</button>
       <button role="tab" id="t-tipos" aria-controls="p-tipos" aria-selected="false">Tipos de direcciones IPv6</button>
       <button role="tab" id="t-eui64" aria-controls="p-eui64" aria-selected="false">SLAAC / EUI-64</button>
       <button role="tab" id="t-ipv4" aria-controls="p-ipv4" aria-selected="false">Analizador IPv4</button>
       <button role="tab" id="t-comparar" aria-controls="p-comparar" aria-selected="false">IPv4 vs IPv6</button>
+      <button role="tab" id="t-router" aria-controls="p-router" aria-selected="false">Componentes del router</button>
+      <button role="tab" id="t-paquete" aria-controls="p-paquete" aria-selected="false">Estructura de paquetes</button>
     </nav>
   </div>
 </header>
@@ -333,6 +390,95 @@ td.mono{font-variant-numeric:tabular-nums}
         <tr><td>Documentación / ejemplos</td><td class="mono">192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24</td><td class="mono">2001:db8::/32, 3fff::/20</td></tr>
         <tr><td>Ruta por defecto</td><td class="mono">0.0.0.0/0</td><td class="mono">::/0</td></tr>
         <tr><td>Resolución de dirección física</td><td>ARP (broadcast)</td><td>NDP: Neighbor Solicitation a la multicast de nodo solicitado <span class="mono">ff02::1:ffXX:XXXX</span></td></tr>
+      </tbody></table></div>
+  </section>
+</div>
+
+<!-- ============ ROUTER ============ -->
+<div role="tabpanel" id="p-router" aria-labelledby="t-router" hidden>
+  <section class="panel">
+    <h2>¿Qué es un router y de qué está hecho?</h2>
+    <p style="max-width:85ch">Un router es una computadora especializada: tiene procesador, memorias, sistema operativo y puertos, igual que una PC, pero no tiene pantalla ni teclado y su único trabajo es <b>recibir paquetes, consultar su tabla de enrutamiento y reenviarlos por la mejor ruta</b> hacia la red de destino. Trabaja en la capa 3 (red) del modelo OSI y conecta redes distintas: por ejemplo, la LAN de la escuela con el proveedor de Internet.</p>
+    <p class="muted">Haz clic en cualquier componente del diagrama para ver su descripción, características y el comando Cisco con el que se consulta.</p>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between"><h2>Hardware: vista interior y panel trasero</h2>
+      <div class="legend"><div><span class="sw" style="background:var(--c-pre)"></span>Procesamiento</div><div><span class="sw" style="background:var(--c-fix)"></span>Memorias</div><div><span class="sw" style="background:var(--c-iid)"></span>Puertos e interfaces</div><div><span class="sw" style="background:var(--c-zero)"></span>Chasis y energía</div></div></div>
+    <div class="chassis-scroll"><div class="chassis" id="chassis"></div></div>
+    <div class="detail" id="hwdetail"></div>
+  </section>
+
+  <section class="panel">
+    <h2>¿Qué se guarda en cada memoria?</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Memoria</th><th>¿Se borra al apagar?</th><th>Qué contiene</th><th>Equivalente en una PC</th><th>Comando</th></tr></thead>
+      <tbody>
+        <tr><td><b>ROM</b></td><td>No (solo lectura)</td><td>POST, bootstrap, ROMmon</td><td>BIOS / UEFI</td><td class="mono">show version</td></tr>
+        <tr><td><b>Flash</b></td><td>No</td><td>Imagen del sistema operativo IOS</td><td>Disco duro / SSD</td><td class="mono">show flash:</td></tr>
+        <tr><td><b>NVRAM</b></td><td>No</td><td>startup-config (configuración guardada)</td><td>Archivo de configuración en disco</td><td class="mono">show startup-config</td></tr>
+        <tr><td><b>RAM</b></td><td><b style="color:var(--bad)">Sí</b></td><td>IOS en ejecución, running-config, tablas de enrutamiento y ARP, búferes de paquetes</td><td>Memoria RAM</td><td class="mono">show running-config</td></tr>
+      </tbody></table></div>
+    <p class="note">Por eso, después de configurar un router hay que ejecutar <span class="mono">copy running-config startup-config</span> (o <span class="mono">write memory</span>): lo que está en RAM se pierde si se reinicia el equipo.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Software del router</h2>
+    <p class="muted">Haz clic en un elemento para ver su explicación.</p>
+    <div class="swgrid" id="swgrid"></div>
+    <div class="detail" id="swdetail"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Proceso de arranque: cómo trabajan juntos hardware y software</h2>
+    <p class="muted">Pulsa <b>Siguiente</b> para recorrer las fases. En el diagrama de arriba se ilumina el componente que participa.</p>
+    <div class="boot" id="boot"></div>
+    <div class="row"><button class="chip" id="bootPrev">Anterior</button><button class="btn" id="bootNext">Siguiente</button><span class="label" id="bootCount"></span></div>
+  </section>
+</div>
+
+<!-- ============ PAQUETES ============ -->
+<div role="tabpanel" id="p-paquete" aria-labelledby="t-paquete" hidden>
+  <section class="panel">
+    <h2>¿Qué es un paquete?</h2>
+    <p style="max-width:85ch">Cuando un equipo envía datos, la información se divide en trozos. En la capa de red (capa 3) cada trozo recibe una <b>cabecera</b> (encabezado) con los datos que los routers necesitan para entregarlo: origen, destino, tiempo de vida, protocolo, etc. Cabecera + datos = <b>paquete</b>. Después, la capa de enlace lo encierra en una <b>trama</b> (por ejemplo Ethernet) para enviarlo por el cable. A esto se le llama <b>encapsulamiento</b>.</p>
+    <div class="encap" id="encap"></div>
+    <p class="note">Cada router que atraviesa el paquete quita la trama Ethernet, lee la cabecera IP, decide por dónde enviarlo y crea una trama nueva. La cabecera IP viaja de extremo a extremo; la trama cambia en cada salto.</p>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between">
+      <h2 id="pktTitle">Cabecera IPv4</h2>
+      <div class="seg" role="group" aria-label="Versión"><button class="segb" data-v="4" aria-pressed="true">IPv4</button><button class="segb" data-v="6" aria-pressed="false">IPv6</button></div>
+    </div>
+    <p class="muted" id="pktIntro"></p>
+    <div class="pkt-scroll"><div class="pkt" id="pkt"></div></div>
+    <p class="note">Cada fila son 32 bits (4 bytes). Los números de arriba indican la posición del bit. Haz clic en un campo para ver qué significa.</p>
+    <div class="detail" id="pktdetail"></div>
+  </section>
+
+  <section class="panel">
+    <h2>¿Qué cambió de IPv4 a IPv6?</h2>
+    <p class="muted" style="max-width:85ch">IPv6 simplificó la cabecera: aunque las direcciones son 4 veces más largas, la cabecera tiene menos campos y un tamaño fijo de 40 bytes, lo que permite a los routers procesarla más rápido.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Campo IPv4</th><th>¿Qué pasó en IPv6?</th><th>Campo IPv6</th><th>Motivo</th></tr></thead>
+      <tbody id="pktcmp"></tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Cabeceras de extensión de IPv6</h2>
+    <p class="muted" style="max-width:85ch">Las funciones opcionales que en IPv4 iban en el campo <i>Opciones</i> o en la fragmentación, en IPv6 van en cabeceras adicionales encadenadas. Cada una indica, con su propio campo <i>Siguiente cabecera</i>, qué viene después.</p>
+    <div class="chain" id="chain"></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Valor de "Siguiente cabecera"</th><th>Cabecera / protocolo</th><th>Uso</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">0</td><td>Salto a salto (Hop-by-Hop)</td><td>Opciones que debe revisar cada router del camino (p. ej. Router Alert de MLD).</td></tr>
+        <tr><td class="mono">43</td><td>Enrutamiento (Routing)</td><td>Indica routers por los que debe pasar el paquete (Segment Routing, IPv6 móvil).</td></tr>
+        <tr><td class="mono">44</td><td>Fragmento</td><td>Solo el emisor fragmenta; aquí van ID, desplazamiento y bit M.</td></tr>
+        <tr><td class="mono">50 / 51</td><td>ESP / AH (IPsec)</td><td>Cifrado y autenticación del paquete.</td></tr>
+        <tr><td class="mono">60</td><td>Opciones de destino</td><td>Opciones que solo lee el destino final.</td></tr>
+        <tr><td class="mono">6 / 17 / 58</td><td>TCP / UDP / ICMPv6</td><td>Fin de la cadena: aquí empiezan los datos de la capa superior.</td></tr>
+        <tr><td class="mono">59</td><td>Sin siguiente cabecera</td><td>No hay nada después.</td></tr>
       </tbody></table></div>
   </section>
 </div>
@@ -717,8 +863,202 @@ const CMP=[
 ];
 $('#cmp').innerHTML=CMP.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
 
+/* ---------- Router: hardware ---------- */
+const HW=[
+ {id:'cpu',area:'cpu',k:'pre',name:'CPU (procesador)',sub:'Cerebro del router',
+  desc:'Ejecuta las instrucciones del sistema operativo IOS. Calcula las rutas con los protocolos de enrutamiento, procesa los comandos que escribe el administrador y decide por qué interfaz sale cada paquete.',
+  facts:[['Tipo','Procesamiento'],['Ejemplo','Multinúcleo ARM o x86 en routers Cisco ISR 4000'],['Comando','show processes cpu']],
+  list:['Ejecuta el IOS y los protocolos de enrutamiento (OSPF, EIGRP, RIP, BGP).','Construye y actualiza la tabla de enrutamiento.','Atiende la administración: consola, SSH, SNMP.','En routers de alto rendimiento, el reenvío masivo lo hacen chips especializados (ASIC) para no saturar la CPU.'],pc:'Igual que el procesador de una PC.'},
+ {id:'ram',area:'ram',k:'fix',name:'RAM (DRAM)',sub:'Memoria volátil de trabajo',
+  desc:'Memoria de trabajo de alta velocidad. Todo lo que el router está usando en este momento vive aquí. Es volátil: su contenido se pierde al apagar o reiniciar.',
+  facts:[['Volátil','Sí, se borra al apagar'],['Tamaño típico','2 a 16 GB'],['Comando','show running-config · show memory']],
+  list:['IOS en ejecución (se copia desde Flash al arrancar).','running-config: la configuración activa.','Tabla de enrutamiento, tabla ARP y tabla de vecinos IPv6 (ND).','Búferes de paquetes: guardan temporalmente los paquetes mientras se procesan o esperan en cola.'],pc:'Igual que la memoria RAM de una PC.'},
+ {id:'nvram',area:'nvram',k:'fix',name:'NVRAM',sub:'Configuración guardada',
+  desc:'Memoria no volátil (Non-Volatile RAM) de poco tamaño donde se guarda el archivo de configuración de arranque, startup-config. Conserva sus datos sin energía.',
+  facts:[['Volátil','No'],['Tamaño típico','Unos cuantos KB o MB'],['Comando','show startup-config']],
+  list:['Guarda la startup-config, que se carga cada vez que el router enciende.','Se escribe con copy running-config startup-config o write memory.','Se borra con erase startup-config (el router arranca "de fábrica").'],pc:'Como un archivo de configuración guardado en disco.'},
+ {id:'flash',area:'flash',k:'fix',name:'Memoria Flash',sub:'Almacena el IOS',
+  desc:'Memoria no volátil, reescribible, tipo EEPROM o tarjeta. Es el "disco" del router: almacena una o varias imágenes del sistema operativo IOS y otros archivos.',
+  facts:[['Volátil','No'],['Tamaño típico','4 a 16 GB'],['Comando','show flash: · dir flash:']],
+  list:['Guarda la imagen del IOS (por ejemplo isr4300-universalk9.bin).','Puede guardar respaldos de configuración y archivos de licencia.','Permite actualizar el IOS copiando una imagen nueva vía TFTP o USB.'],pc:'Como el disco duro o SSD de una PC.'},
+ {id:'rom',area:'rom',k:'fix',name:'ROM',sub:'Firmware de arranque',
+  desc:'Memoria de solo lectura con el firmware que se ejecuta al encender, antes de que exista un sistema operativo cargado.',
+  facts:[['Volátil','No (solo lectura)'],['Contiene','POST, bootstrap, ROMmon'],['Comando','show version (línea ROM:)']],
+  list:['POST: autodiagnóstico del hardware al encender.','Bootstrap: programa que busca y carga el IOS.','ROMmon: sistema mínimo de emergencia para recuperar contraseñas o reinstalar el IOS si falla.'],pc:'Como el BIOS / UEFI de una PC.'},
+ {id:'slot',area:'slot',k:'iid',name:'Ranuras de expansión',sub:'Módulos NIM / EHWIC',
+  desc:'Ranuras donde se insertan tarjetas de interfaz adicionales. Hacen al router modular: se pueden agregar puertos seriales, de fibra, de voz o 4G según lo que necesite la red.',
+  facts:[['Tipo','Hardware modular'],['Ejemplos','NIM-2T (2 seriales), NIM-ES2-4 (4 Ethernet)'],['Comando','show inventory']],
+  list:['Permiten crecer sin cambiar el equipo completo.','Algunas tarjetas se pueden cambiar en caliente (sin apagar).','El nombre de la interfaz incluye la ranura: Serial0/1/0 = slot 0, subslot 1, puerto 0.'],pc:'Como las ranuras PCI Express de una PC.'},
+ {id:'psu',area:'psu',k:'zero',name:'Fuente de alimentación',sub:'Energía eléctrica',
+  desc:'Convierte la corriente alterna en corriente directa para todos los componentes. Los routers empresariales pueden tener dos fuentes redundantes y entregar PoE a teléfonos IP o puntos de acceso.',
+  facts:[['Tipo','Energía'],['Opciones','AC, DC, redundante, PoE'],['Comando','show environment']],
+  list:['Fuente redundante: si una falla, la otra mantiene el router encendido.','PoE (Power over Ethernet) alimenta dispositivos por el cable de red.'],pc:'Como la fuente de poder de una PC.'},
+ {id:'fan',area:'fan',k:'zero',name:'Ventiladores y chasis',sub:'Enfriamiento y estructura',
+  desc:'El chasis metálico protege los componentes y permite montarlo en un rack de 19 pulgadas. Los ventiladores mantienen la temperatura adecuada; el router mide su temperatura con sensores.',
+  facts:[['Tipo','Estructura'],['Montaje','Rack de 19" (1U o 2U)'],['Comando','show environment']],
+  list:['Si la temperatura es excesiva el router genera alarmas o se apaga para protegerse.','El flujo de aire suele ir de frente hacia atrás.'],pc:'Como el gabinete y los ventiladores de una PC.'},
+];
+const PORTS=[
+ {id:'lan',k:'iid',name:'Interfaces LAN',sub:'GigabitEthernet 0/0/0 y 0/0/1',n:2,
+  desc:'Puertos Ethernet (RJ-45 o SFP de fibra) que conectan el router a las redes locales: switches, servidores o PCs. Cada interfaz pertenece a una red distinta y su dirección IP suele ser la puerta de enlace (gateway) de esa red.',
+  facts:[['Tipo','Interfaz física, capa 1-3'],['Velocidad','100 Mb/s, 1 Gb/s, 10 Gb/s'],['Comando','show ip interface brief']],
+  list:['Cada interfaz tiene su propia dirección MAC.','Se configuran con ip address 192.168.10.1 255.255.255.0 e ipv6 address 2001:db8:acad:10::1/64.','Vienen apagadas por defecto: se activan con no shutdown.','Pueden dividirse en subinterfaces (G0/0/0.10) para enrutar VLANs (router-on-a-stick).'],pc:'Como la tarjeta de red de una PC, pero el router tiene varias.'},
+ {id:'wan',k:'iid',name:'Interfaces WAN',sub:'Serial 0/1/0 · fibra · 4G',n:1,
+  desc:'Conectan el router con redes de área amplia: el proveedor de Internet u otras sedes de la organización. Pueden ser seriales, Ethernet, DSL, fibra o celulares.',
+  facts:[['Tipo','Interfaz física'],['Ejemplos','Serial, GigabitEthernet WAN, DSL, LTE'],['Comando','show interfaces serial 0/1/0']],
+  list:['En enlaces seriales, el extremo DCE marca la sincronía con clock rate.','Usan encapsulamientos WAN como HDLC o PPP.','Normalmente reciben la ruta por defecto hacia Internet.'],pc:'Como el módem que conecta tu casa al proveedor.'},
+ {id:'con',k:'iid',name:'Puerto de consola',sub:'RJ-45 / USB',n:1,
+  desc:'Puerto de administración fuera de banda (out-of-band). Permite configurar el router directamente con una laptop, sin necesitar red. Es el único acceso posible a un router nuevo sin configurar.',
+  facts:[['Cable','Rollover (consola) o USB'],['Parámetros','9600 baudios, 8 bits, sin paridad, 1 bit de parada'],['Software','PuTTY, Tera Term']],
+  list:['Se usa para la configuración inicial.','Permite recuperar contraseñas entrando a ROMmon.','Se protege con line console 0 + password + login.'],pc:'Como conectar directamente un teclado y un monitor.'},
+ {id:'aux',k:'iid',name:'Puerto auxiliar (AUX)',sub:'Acceso remoto por módem',n:1,
+  desc:'Puerto de administración que permite conectar un módem telefónico para acceder al router de forma remota cuando la red no funciona. En equipos nuevos casi no se usa.',
+  facts:[['Tipo','Administración fuera de banda'],['Configuración','line aux 0'],['Uso actual','Poco frecuente']],
+  list:['Acceso de emergencia si el enlace de red está caído.','Se debe proteger con contraseña igual que la consola.'],pc:'Como un acceso remoto por línea telefónica.'},
+ {id:'usb',k:'iid',name:'Puertos USB',sub:'Almacenamiento y consola',n:1,
+  desc:'Permiten conectar memorias USB para copiar imágenes de IOS o respaldos de configuración, y en algunos modelos funcionan como puerto de consola.',
+  facts:[['Tipo','Almacenamiento externo'],['Sistema de archivos','usbflash0:'],['Comando','copy usbflash0:archivo flash:']],
+  list:['Útil para actualizar el IOS sin servidor TFTP.','Permite guardar respaldos de configuración.'],pc:'Igual que el USB de una PC.'},
+ {id:'pwr',k:'zero',name:'Conector de energía',sub:'Entrada AC y botón',n:0,
+  desc:'Entrada de corriente eléctrica e interruptor de encendido. Junto a ellos suelen estar los LED de estado (SYS, ACT, POE).',
+  facts:[['Tipo','Energía'],['LED SYS','Verde fijo = arranque correcto'],['Comando','—']],
+  list:['Al encender, el LED de sistema parpadea mientras se ejecuta el POST.'],pc:'Igual que el botón de encendido.'},
+];
+const ALLHW=[...HW,...PORTS];
+$('#chassis').innerHTML=`<div class="board">${HW.map(c=>`<button class="comp" data-hw="${c.id}" style="grid-area:${c.area};--k:${cv(c.k)};--kb:${cb(c.k)}"><b>${c.name}</b><span>${c.sub}</span></button>`).join('')}</div>
+ <div class="rear"><span class="ttl">Panel trasero (vista exterior)</span>${PORTS.map(c=>`<button class="comp" data-hw="${c.id}" style="--k:${cv(c.k)};--kb:${cb(c.k)}">${c.n?`<div class="port">${'<i></i>'.repeat(c.n)}</div>`:''}<b>${c.name}</b><span>${c.sub}</span></button>`).join('')}</div>`;
+function showHw(id){
+  const c=ALLHW.find(x=>x.id===id);
+  document.querySelectorAll('[data-hw]').forEach(b=>b.classList.toggle('sel',b.dataset.hw===id));
+  $('#hwdetail').style.borderLeftColor=cv(c.k);
+  $('#hwdetail').innerHTML=`<span class="label">Hardware</span><h3>${c.name}</h3><p>${c.desc}</p>
+   <div class="facts">${c.facts.map(f=>`<div class="kv" style="background:var(--panel)"><span class="label">${f[0]}</span><span class="v" style="font-size:14px">${f[1]}</span></div>`).join('')}</div>
+   <ul style="margin:0;padding-left:20px">${c.list.map(l=>`<li>${l}</li>`).join('')}</ul><p class="note"><b>Comparación con una PC:</b> ${c.pc}</p>`;
+}
+$('#chassis').addEventListener('click',e=>{const b=e.target.closest('[data-hw]');if(b)showHw(b.dataset.hw)});
+showHw('cpu');
+
+/* ---------- Router: software ---------- */
+const SW=[
+ {id:'ios',name:'Cisco IOS / IOS XE',k:'pre',where:'Flash → se ejecuta en RAM',desc:'Sistema operativo del router (Internetwork Operating System). Administra el hardware, ejecuta los protocolos de enrutamiento y ofrece la interfaz de línea de comandos (CLI). Otros fabricantes tienen el suyo: Junos (Juniper), RouterOS (MikroTik), VRP (Huawei).',list:['La versión y la imagen se ven con show version.','Se actualiza copiando una imagen nueva a Flash y cambiando la instrucción boot system.']},
+ {id:'post',name:'POST',k:'fix',where:'ROM',desc:'Power-On Self Test. Programa de autodiagnóstico que revisa CPU, memoria e interfaces cada vez que el router enciende. Si encuentra una falla grave, el router no continúa el arranque.',list:['Equivale al pitido de revisión del BIOS de una PC.']},
+ {id:'boot',name:'Bootstrap',k:'fix',where:'ROM',desc:'Pequeño programa que se ejecuta después del POST. Su trabajo es localizar el IOS (en Flash, en un servidor TFTP o en USB) y cargarlo en la RAM.',list:['Lee el registro de configuración para saber de dónde arrancar.']},
+ {id:'rommon',name:'ROMmon',k:'fix',where:'ROM',desc:'Monitor de ROM: sistema mínimo de diagnóstico y recuperación. Se activa si no se encuentra un IOS válido o si el administrador lo provoca (tecla Break durante el arranque).',list:['Se usa para recuperar contraseñas cambiando el registro a 0x2142.','Permite descargar un IOS nuevo por TFTP si el de Flash está dañado.','Su indicador es rommon 1 >']},
+ {id:'run',name:'running-config',k:'iid',where:'RAM',desc:'Configuración activa en este momento. Cada comando que se escribe en modo de configuración se aplica de inmediato aquí.',list:['Se ve con show running-config.','Se pierde al reiniciar si no se guarda.']},
+ {id:'start',name:'startup-config',k:'iid',where:'NVRAM',desc:'Configuración guardada que el router carga al arrancar. Se actualiza solo cuando el administrador la guarda.',list:['copy running-config startup-config la guarda.','Si no existe, el router entra al diálogo de configuración inicial (setup mode).']},
+ {id:'rt',name:'Tabla de enrutamiento',k:'sub',where:'RAM',desc:'Lista de redes conocidas y por dónde llegar a cada una. El router la consulta para cada paquete y elige la ruta con el prefijo más largo que coincida con el destino.',list:['show ip route / show ipv6 route','Códigos: C conectada, L local, S estática, O OSPF, D EIGRP, R RIP, * ruta por defecto.','Se llena con redes directamente conectadas, rutas estáticas y protocolos dinámicos.']},
+ {id:'arp',name:'Tabla ARP / vecinos IPv6',k:'sub',where:'RAM',desc:'Relaciona direcciones IP con direcciones MAC de los equipos conectados directamente. En IPv4 se obtiene con ARP; en IPv6 con NDP (Neighbor Discovery).',list:['show arp · show ipv6 neighbors','Necesaria para construir la trama Ethernet del siguiente salto.']},
+ {id:'reg',name:'Registro de configuración',k:'zero',where:'NVRAM',desc:'Valor de 16 bits que indica cómo debe arrancar el router: de dónde cargar el IOS y si debe leer o ignorar la startup-config.',list:['0x2102: arranque normal (valor por defecto).','0x2142: ignora la startup-config (recuperación de contraseña).','Se ve al final de show version.']},
+ {id:'cli',name:'CLI y modos de operación',k:'pre',where:'Software del IOS',desc:'Interfaz de comandos con niveles de acceso jerárquicos. Cada modo permite un tipo de comandos distinto.',list:['Router> modo usuario: solo consulta básica.','Router# modo privilegiado (enable): show, copy, reload.','Router(config)# configuración global (configure terminal).','Router(config-if)# configuración de una interfaz.']},
+];
+$('#swgrid').innerHTML=SW.map(s=>`<button class="comp" data-sw="${s.id}" style="--k:${cv(s.k)};--kb:${cb(s.k)}"><b>${s.name}</b><span>Se guarda en: ${s.where}</span></button>`).join('');
+function showSw(id){const s=SW.find(x=>x.id===id);document.querySelectorAll('[data-sw]').forEach(b=>b.classList.toggle('sel',b.dataset.sw===id));
+  $('#swdetail').style.borderLeftColor=cv(s.k);
+  $('#swdetail').innerHTML=`<span class="label">Software · ${s.where}</span><h3>${s.name}</h3><p>${s.desc}</p><ul style="margin:0;padding-left:20px">${s.list.map(l=>`<li>${l}</li>`).join('')}</ul>`}
+$('#swgrid').addEventListener('click',e=>{const b=e.target.closest('[data-sw]');if(b)showSw(b.dataset.sw)});
+showSw('ios');
+
+/* ---------- Router: arranque ---------- */
+const BOOT=[
+ {t:'POST',hw:['rom','cpu','ram'],d:'Al encender, la CPU ejecuta el POST desde la ROM: prueba la CPU, la RAM y las interfaces.'},
+ {t:'Cargar bootstrap',hw:['rom','ram'],d:'Se copia el bootstrap de la ROM a la RAM y se ejecuta. Lee el registro de configuración (0x2102).'},
+ {t:'Localizar y cargar IOS',hw:['flash','ram'],d:'El bootstrap busca el IOS en Flash y lo descomprime en la RAM. Si no lo encuentra, lo busca en un servidor TFTP; si tampoco, entra en ROMmon.'},
+ {t:'Cargar configuración',hw:['nvram','ram'],d:'El IOS copia la startup-config de la NVRAM a la RAM, donde se convierte en running-config. Si no existe, inicia el modo setup. El router queda listo para enrutar.'},
+];
+let bi=0;
+function renderBoot(){
+  $('#boot').innerHTML=BOOT.map((b,i)=>`<div class="bstep${i===bi?' on':i<bi?' done':''}"><span class="n">FASE ${i+1}</span><h3>${b.t}</h3><p style="font-size:15px">${b.d}</p><span class="note">Participan: ${b.hw.map(h=>ALLHW.find(x=>x.id===h).name).join(', ')}</span></div>`).join('');
+  document.querySelectorAll('[data-hw]').forEach(el=>el.classList.toggle('glow',BOOT[bi].hw.includes(el.dataset.hw)));
+  $('#bootCount').textContent=`Fase ${bi+1} de ${BOOT.length}`;
+  $('#bootPrev').disabled=bi===0;$('#bootNext').textContent=bi===BOOT.length-1?'Reiniciar':'Siguiente';
+}
+$('#bootNext').addEventListener('click',()=>{bi=(bi+1)%BOOT.length;renderBoot()});
+$('#bootPrev').addEventListener('click',()=>{if(bi>0){bi--;renderBoot()}});
+renderBoot();
+
+/* ---------- Paquetes ---------- */
+$('#encap').innerHTML=[
+ ['Cabecera Ethernet','14 bytes','zero',14],['Cabecera IP','20 B (IPv4) / 40 B (IPv6)','pre',22],['Cabecera TCP/UDP','20 / 8 bytes','sub',16],['Datos de la aplicación','hasta ~1460 bytes','iid',44],['FCS','4 bytes','zero',8]
+].map(x=>`<div style="flex:${x[3]};background:${cb(x[2])};color:${cv(x[2])}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')
+ .replace(/(<div style="flex:22)/,'$1;outline:2px solid var(--c-pre);outline-offset:-2px');
+const P4=[
+ {s:0,n:4,name:'Versión',k:'fix',v:'4',d:'Indica la versión del protocolo IP. En IPv4 siempre vale 4 (0100 en binario). El router lo lee primero para saber cómo interpretar el resto de la cabecera.',six:'Se conserva (vale 6).'},
+ {s:4,n:4,name:'IHL',k:'fix',v:'5 → 20 bytes',d:'Internet Header Length: longitud de la cabecera medida en palabras de 32 bits. El mínimo es 5 (5 × 4 = 20 bytes); con opciones puede llegar a 15 (60 bytes).',six:'Eliminado: la cabecera IPv6 siempre mide 40 bytes.'},
+ {s:8,n:6,name:'DSCP',k:'sub',v:'0 (normal)',d:'Differentiated Services Code Point: marca la prioridad del paquete para calidad de servicio (QoS). Por ejemplo, la voz sobre IP usa EF (46) para tener prioridad sobre una descarga.',six:'Pasa al campo Clase de tráfico.'},
+ {s:14,n:2,name:'ECN',k:'sub',v:'00',d:'Explicit Congestion Notification: permite a los routers avisar que hay congestión sin descartar paquetes.',six:'Pasa al campo Clase de tráfico.'},
+ {s:16,n:16,name:'Longitud total',k:'pre',v:'60 bytes',d:'Tamaño completo del paquete (cabecera + datos) en bytes. Al ser de 16 bits, el máximo es 65 535 bytes.',six:'Cambia a Longitud de la carga útil (sin contar la cabecera).'},
+ {s:32,n:16,name:'Identificación',k:'v4',v:'0x1c46',d:'Número que identifica al paquete original. Si el paquete se fragmenta, todos los fragmentos llevan el mismo número para que el destino pueda reensamblarlos.',six:'Se movió a la cabecera de extensión de Fragmento.'},
+ {s:48,n:3,name:'Flags',k:'v4',v:'010 (DF)',d:'Tres bits de control de fragmentación: el primero reservado (0), DF (Don\'t Fragment, no fragmentar) y MF (More Fragments, vienen más fragmentos).',six:'Se movió a la cabecera de Fragmento.'},
+ {s:51,n:13,name:'Desplazamiento de fragmento',k:'v4',v:'0',d:'Fragment Offset: posición de este fragmento dentro del paquete original, en unidades de 8 bytes. El primer fragmento tiene desplazamiento 0.',six:'Se movió a la cabecera de Fragmento.'},
+ {s:64,n:8,name:'TTL',k:'grp',v:'64',d:'Time To Live: cada router que reenvía el paquete le resta 1. Si llega a 0 el paquete se descarta y se envía un mensaje ICMP "Time Exceeded". Evita que un paquete gire para siempre en un bucle de enrutamiento. Traceroute aprovecha este campo.',six:'Renombrado como Límite de saltos.'},
+ {s:72,n:8,name:'Protocolo',k:'grp',v:'6 (TCP)',d:'Indica qué protocolo de capa superior va en los datos: 1 = ICMP, 6 = TCP, 17 = UDP, 88 = EIGRP, 89 = OSPF.',six:'Renombrado como Siguiente cabecera.'},
+ {s:80,n:16,name:'Checksum de cabecera',k:'zero',v:'0xb1e6',d:'Suma de verificación para detectar errores solo en la cabecera. Como el TTL cambia en cada salto, cada router debe recalcularlo, lo que consume tiempo de procesamiento.',six:'Eliminado: Ethernet y TCP/UDP ya verifican errores.'},
+ {s:96,n:32,name:'Dirección IPv4 de origen',k:'pre',v:'192.168.10.25',d:'Dirección de 32 bits del equipo que envía el paquete. Puede cambiar si atraviesa un router con NAT.',six:'Se conserva, ahora de 128 bits.'},
+ {s:128,n:32,name:'Dirección IPv4 de destino',k:'iid',v:'8.8.8.8',d:'Dirección de 32 bits del equipo que debe recibir el paquete. Es el campo que el router compara con su tabla de enrutamiento para decidir por dónde reenviarlo.',six:'Se conserva, ahora de 128 bits.'},
+ {s:160,n:32,name:'Opciones + relleno (opcional)',k:'zero',v:'normalmente vacío',opt:true,d:'Campo de longitud variable (0 a 40 bytes) para funciones especiales: registro de ruta, marca de tiempo, enrutamiento de origen. Casi no se usa. El relleno completa la cabecera hasta un múltiplo de 32 bits.',six:'Reemplazado por las cabeceras de extensión.'},
+];
+const P6=[
+ {s:0,n:4,name:'Versión',k:'fix',v:'6',d:'Indica la versión del protocolo. En IPv6 vale 6 (0110 en binario).'},
+ {s:4,n:8,name:'Clase de tráfico',k:'sub',v:'0x00',d:'Traffic Class: equivalente a DSCP + ECN de IPv4. Marca la prioridad del paquete para QoS (6 bits DSCP) y notifica congestión (2 bits ECN).'},
+ {s:12,n:20,name:'Etiqueta de flujo',k:'sub',v:'0x5a3c1',d:'Flow Label: campo nuevo de IPv6. Identifica a los paquetes que pertenecen al mismo flujo (por ejemplo, una videollamada) para que los routers los traten igual y los envíen por el mismo camino sin revisar los puertos TCP/UDP.'},
+ {s:32,n:16,name:'Longitud de carga útil',k:'pre',v:'40 bytes',d:'Payload Length: tamaño de los datos que siguen a la cabecera, incluyendo las cabeceras de extensión. A diferencia de IPv4, no cuenta los 40 bytes de la cabecera fija.'},
+ {s:48,n:8,name:'Siguiente cabecera',k:'grp',v:'6 (TCP)',d:'Next Header: indica qué viene después de la cabecera. Puede ser un protocolo de capa superior (6 TCP, 17 UDP, 58 ICMPv6) o una cabecera de extensión (0, 43, 44, 60...). Reemplaza al campo Protocolo de IPv4.'},
+ {s:56,n:8,name:'Límite de saltos',k:'grp',v:'64',d:'Hop Limit: igual que el TTL de IPv4. Cada router le resta 1 y descarta el paquete al llegar a 0, enviando un ICMPv6 "Time Exceeded".'},
+ {s:64,n:128,name:'Dirección IPv6 de origen',k:'pre',v:'2001:db8:acad:1::25',d:'Dirección de 128 bits del equipo que envía el paquete. Ocupa 4 filas de 32 bits (16 bytes).'},
+ {s:192,n:128,name:'Dirección IPv6 de destino',k:'iid',v:'2001:4860:4860::8888',d:'Dirección de 128 bits del destinatario. El router la compara con su tabla de enrutamiento IPv6 para reenviar el paquete. Si hay cabecera de Enrutamiento, puede ser un punto intermedio.'},
+];
+const PCMP=[
+ ['Versión','Se conserva','Versión','Sigue indicando la versión (4 o 6).'],
+ ['IHL','Eliminado','—','La cabecera IPv6 es de tamaño fijo (40 bytes).'],
+ ['DSCP + ECN (Tipo de servicio)','Renombrado','Clase de tráfico','Misma función de QoS.'],
+ ['—','Nuevo','Etiqueta de flujo','Identificar flujos de tráfico en tiempo real.'],
+ ['Longitud total','Modificado','Longitud de carga útil','Ya no incluye la cabecera.'],
+ ['Identificación, Flags, Desplazamiento','Movidos','Cabecera de extensión Fragmento','Los routers ya no fragmentan; solo el emisor.'],
+ ['TTL','Renombrado','Límite de saltos','El nombre refleja lo que realmente mide: saltos.'],
+ ['Protocolo','Renombrado','Siguiente cabecera','También puede señalar cabeceras de extensión.'],
+ ['Checksum de cabecera','Eliminado','—','Evita recalcularlo en cada salto; capas 2 y 4 ya verifican errores.'],
+ ['Dirección de origen / destino','Ampliado','Origen / destino (128 bits)','Espacio de direcciones mucho mayor.'],
+ ['Opciones','Movido','Cabeceras de extensión','Solo se agregan cuando se necesitan.'],
+];
+$('#pktcmp').innerHTML=PCMP.map(r=>{const c={'Se conserva':'iid','Eliminado':'zero','Nuevo':'sub','Renombrado':'pre','Modificado':'pre','Movidos':'v4','Movido':'v4','Ampliado':'iid'}[r[1]];return `<tr><td>${r[0]}</td><td><span class="typebadge" style="font-size:13px;padding:3px 9px;background:${cb(c)};color:${cv(c)}">${r[1]}</span></td><td>${r[2]}</td><td>${r[3]}</td></tr>`}).join('');
+$('#chain').innerHTML=[['Cabecera IPv6','Sig. cab. = 43','pre'],['Enrutamiento','Sig. cab. = 44','v4'],['Fragmento','Sig. cab. = 6','v4'],['TCP','datos','sub']].map((x,i)=>`${i?'<span class="arr">→</span>':''}<div class="lnk" style="--k:${cv(x[2])};--kb:${cb(x[2])}"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+let pv='4';
+function renderPkt(){
+  const F=pv==='4'?P4:P6;
+  $('#pktTitle').textContent=pv==='4'?'Cabecera IPv4 (20 a 60 bytes)':'Cabecera IPv6 (40 bytes fijos)';
+  $('#pktIntro').textContent=pv==='4'?'La cabecera IPv4 tiene 12 campos obligatorios en 20 bytes (5 filas de 32 bits) más un campo de opciones opcional. Valores de ejemplo: una PC de la red 192.168.10.0/24 enviando una consulta TCP a 8.8.8.8.':'La cabecera IPv6 tiene solo 8 campos en 40 bytes fijos (10 filas de 32 bits). Las direcciones ocupan 32 de esos 40 bytes. Valores de ejemplo: una PC de la red 2001:db8:acad:1::/64 enviando una consulta TCP.';
+  let html='';for(let i=0;i<32;i++)html+=`<span class="ruler" style="grid-row:1;grid-column:${i+1}">${i%4===0||i===31?i:''}</span>`;
+  html+=F.map((f,i)=>{const row=Math.floor(f.s/32)+2,col=f.s%32+1,span=Math.min(f.n,32),rs=f.n>32?f.n/32:1;
+    return `<button class="pf${f.opt?' opt':''}" data-f="${i}" style="grid-row:${row}/span ${rs};grid-column:${col}/span ${span};--k:${cv(f.k)};--kb:${cb(f.k)}${rs>1?';min-height:'+(rs*30)+'px':''}"><b>${f.name}</b><span>${f.n}${f.opt?'+':''} bits</span><em>${f.v}</em></button>`}).join('');
+  $('#pkt').innerHTML=html;
+  document.querySelectorAll('.segb').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===pv));
+  showField(pv==='4'?12:7);
+}
+function showField(i){
+  const f=(pv==='4'?P4:P6)[i];
+  document.querySelectorAll('.pf').forEach(b=>b.classList.toggle('sel',+b.dataset.f===i));
+  $('#pktdetail').style.borderLeftColor=cv(f.k);
+  $('#pktdetail').innerHTML=`<span class="label">IPv${pv} · bits ${f.s} a ${f.s+f.n-1}${f.opt?' (o más)':''} · ${f.n} bits${f.n>=8?' = '+(f.n/8)+' bytes':''}</span><h3>${f.name}</h3><p>${f.d}</p><p><b>Valor de ejemplo:</b> <span class="mono">${f.v}</span></p>${f.six?`<p class="note"><b>En IPv6:</b> ${f.six}</p>`:''}`;
+}
+$('#pkt').addEventListener('click',e=>{const b=e.target.closest('.pf');if(b)showField(+b.dataset.f)});
+document.querySelectorAll('.segb').forEach(b=>b.addEventListener('click',()=>{pv=b.dataset.v;renderPkt()}));
+renderPkt();
+
 $('#v6pre').value=64; run6(); run4(); runEui();
 })();
 </script>
 
-</body></html>
+</body>
+</html>
+
+
+
+
+
+   
+
+
+  
+  
+
+   
